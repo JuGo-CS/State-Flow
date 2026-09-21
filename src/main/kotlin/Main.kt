@@ -70,13 +70,21 @@ fun runParseFile(path: String) {
 fun runPrompt() {
     print("> ")
     var line = readLine()
+
+    // fallback to tokenizing first
     while (line != null) {
-        run(line)
+        val tokens = scan(line)
+        if (tokens != null) {
+            for (token in tokens) {
+                println(token)
+            }
+        }
         print("> ")
         line = readLine()
     }
     println()
 }
+
 
 fun parseAndPrintLine(source: String) {
     val tokens = scan(source)
