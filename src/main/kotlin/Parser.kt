@@ -1,65 +1,114 @@
 class Parser(private val tokens: List<Token>) {
     private var current = 0
- 
+
     var hadError = false
         private set
- 
+
     private class ParseError : RuntimeException()
- 
+
     fun parse(): Expr? {
         return try {
-            expression()
+            val expr = expression()
+            if (!isAtEnd()) {
+                throw error(peek(), "Expect end of expression.")
+            }
+            expr
         } catch (error: ParseError) {
             null
         }
     }
 
+    private fun expression(): Expr = equality()
 
     private fun equality(): Expr {
-        //TODO: implement equality
+        var expr = comparison()
+        while (match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)) {
+            val operator = previous()
+            val right = comparison()
+            expr = Expr.Binary(expr, operator, right)
+        }
+        return expr
     }
 
     private fun comparison(): Expr {
-        //TODO: implement comparison
+        var expr = term()
+        while (match(
+                TokenType.GREATER, TokenType.GREATER_EQUAL,
+                TokenType.LESS, TokenType.LESS_EQUAL
+            )
+        ) {
+            val operator = previous()
+            val right = term()
+            expr = Expr.Binary(expr, operator, right)
+        }
+        return expr
     }
-    
 
-     private fun term(): Expr {
-        var expr = primary()
+    private fun term(): Expr {
+        var expr = factor()
         while (match(TokenType.PLUS, TokenType.MINUS)) {
             val operator = previous()
-            val right = primary()
+            val right = factor()
             expr = Expr.Binary(expr, operator, right)
         }
         return expr
     }
 
     private fun factor(): Expr {
-        //TODO: implement factor
+        var expr = unary()
+        while (match(TokenType.SLASH, TokenType.STAR)) {
+            val operator = previous()
+            val right = unary()
+            expr = Expr.Binary(expr, operator, right)
+        }
+        return expr
     }
 
     private fun unary(): Expr {
-        //TODO: implement unary
+        if (match(TokenType.BANG, TokenType.MINUS)) {
+            val operator = previous()
+            val right = unary()
+            return Expr.Unary(operator, right)
+        }
+        return primary()
+    }
+
+    private fun primary(): Expr {
+        if (match(TokenType.FALSE)) return Expr.Literal(false)
+        if (match(TokenType.TRUE)) return Expr.Literal(true)
+        if (match(TokenType.NIL)) return Expr.Literal(null)
+
+        if (match(TokenType.NUMBER, TokenType.STRING)) {
+            return Expr.Literal(previous().literal)
+        }
+
+        if (match(TokenType.LEFT_PAREN)) {
+            val expr = expression()
+            consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
+            return Expr.Grouping(expr)
+        }
+
+        throw error(peek(), "Expect expression.")
     }
 
     // helpers
 
     private fun peek(): Token = tokens[current]
- 
+
     private fun previous(): Token = tokens[current - 1]
- 
+
     private fun isAtEnd(): Boolean = peek().type == TokenType.EOF
- 
+
     private fun advance(): Token {
         if (!isAtEnd()) current++
         return previous()
     }
- 
+
     private fun check(type: TokenType): Boolean {
         if (isAtEnd()) return false
         return peek().type == type
     }
- 
+
     private fun match(vararg types: TokenType): Boolean {
         for (type in types) {
             if (check(type)) {
@@ -69,12 +118,12 @@ class Parser(private val tokens: List<Token>) {
         }
         return false
     }
- 
+
     private fun consume(type: TokenType, message: String): Token {
         if (check(type)) return advance()
         throw error(peek(), message)
     }
- 
+
     private fun error(token: Token, message: String): ParseError {
         hadError = true
         if (token.type == TokenType.EOF) {
@@ -86,7 +135,15 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun synchronize() {
-        //TODO: implement synchronize
+        advance()
+        while (!isAtEnd()) {
+            if (previous().type == TokenType.SEMICOLON) return
+            when (peek().type) {
+                TokenType.FUN, TokenType.VAR, TokenType.FOR, TokenType.IF,
+                TokenType.WHILE, TokenType.PRINT, TokenType.RETURN -> return
+                else -> {}
+            }
+            advance()
+        }
     }
-
 }

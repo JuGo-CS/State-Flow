@@ -36,7 +36,7 @@ StateFlow is a general-purpose programming language designed for programs that n
 
 ## File extension
 
-StateFlow source files use the `.sta` extension.
+StateFlow source files use the `.sf` extension.
 
 ## Lexical structure
 
