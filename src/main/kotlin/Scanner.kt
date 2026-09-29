@@ -20,7 +20,11 @@ class Scanner(private val source: String) {
             "return" to TokenType.RETURN,
             "true" to TokenType.TRUE,
             "var" to TokenType.VAR,
-            "while" to TokenType.WHILE
+            "while" to TokenType.WHILE,
+            "state" to TokenType.STATE,
+            "goto" to TokenType.GOTO,
+            "requires" to TokenType.REQUIRES,
+            "input" to TokenType.INPUT
         )
     }
 

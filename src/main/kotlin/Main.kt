@@ -33,6 +33,8 @@ fun scan(source: String): List<Token>? {
     return tokens
 }
 
+
+
 // tokenizer
 fun runTokenFile(path: String) {
     val source = readSourceFile(path)
@@ -48,6 +50,7 @@ fun runTokenFile(path: String) {
  
     exitProcess(0)
 }
+
 
 // parser
 fun runParseFile(path: String) {
@@ -68,21 +71,29 @@ fun runParseFile(path: String) {
 
 // REPL
 fun runPrompt() {
+    
     print("> ")
     var line = readLine()
 
     // fallback to tokenizing first
     while (line != null) {
-        val tokens = scan(line)
-        if (tokens != null) {
-            for (token in tokens) {
-                println(token)
-            }
-        }
+        runScanner(line)
         print("> ")
         line = readLine()
     }
     println()
+}
+
+fun runScanner(source: String): Boolean {
+    val scanner = scan(source)
+
+    if (!scanner.hadError) {
+        for (token in tokens) {
+            println(token)
+        }
+    }
+
+    return scanner.hadError
 }
 
 

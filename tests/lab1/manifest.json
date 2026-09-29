@@ -1,5 +1,5 @@
 {
-    "ext": ".kts",
+    "ext": ".sf",
     "flag": "--tokenize",
     "mode": "sidecar"
 }

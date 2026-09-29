@@ -1,0 +1,9 @@
+state START {
+    input();
+    goto MENU;
+}
+
+state MENU {
+    requires true;
+    goto START;
+}
