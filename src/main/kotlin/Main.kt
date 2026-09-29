@@ -2,7 +2,7 @@ import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     when {
-        args.size == 2 && args[0] == "--tokenize" -> runFile(args[1])
+        args.size == 2 && args[0] == "--tokenize" -> tokenizeFile(args[1])
         args.size == 1 -> println("Hello, maayong buntag!")
         args.isEmpty() -> runPrompt()
         else -> {
@@ -11,7 +11,7 @@ fun main(args: Array<String>) {
     }
 }
 
-fun runFile(path: String) {
+fun tokenizeFile(path: String) {
     val source = try {
         java.io.File(path).readText()
     } catch (e: java.io.IOException) {
@@ -19,17 +19,19 @@ fun runFile(path: String) {
         exitProcess(66)
     }
 
-    val hadError = run(source)
+    val hadError = runScanner(source)
     if (hadError) exitProcess(65)
 
     exitProcess(0)
 }
 
+
 fun runPrompt() {
+    
     print("> ")
     var line = readLine()
     while (line != null) {
-        run(line)
+        runScanner(line)
         print("> ")
         line = readLine()
     }
@@ -37,7 +39,7 @@ fun runPrompt() {
 }
 
 // returns true if scanning failed
-fun run(source: String): Boolean {
+fun runScanner(source: String): Boolean {
     val scanner = Scanner(source)
     val tokens = scanner.scanTokens()
 
