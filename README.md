@@ -91,8 +91,8 @@ The following words are reserved and cannot be used as identifiers.
 
 | Kind | Syntax | Produces |
 |---|---|---|
-| [number] | `42, 3.14` | A numeric literal |
-| [string] | `"hello"` escapes supported] | A string literal |
+| Number | `42`, `3.14` | A numeric literal (double-precision). No leading-dot decimals (`.42` scans as DOT then NUMBER), no trailing-dot folding (`42.` scans as NUMBER then DOT), no underscore separators, and no unary-minus folding (`-5` scans as MINUS then NUMBER). |
+| String | `"hello"` | A string literal. Supports `\n`, `\t`, `\\`, `\"` escapes and legal multi-line strings. An unrecognized escape sequence is a lexical error. Empty string `""` is legal. |
 | [boolean] | `true`, `false` | A boolean literal |
 | [nil] | `nil` | A nil value |
 
@@ -113,7 +113,7 @@ The following words are reserved and cannot be used as identifiers.
 ### Comments
 
 - Line comments: `//`
-- Block comments: Not supported yet
+- Block comments: Not supported
 - Nesting: Not supported
 - [Harness note: comment_prefix in tests/lab*/manifest.json is set to the
   token above.]
@@ -202,6 +202,16 @@ true.]
 
 ## Errors and diagnostics
 
+An unterminated string or an illegal character does not stop scanning
+immediately. The scanner keeps consuming input, so multiple errors in
+one file are all reported to stderr in a single run (see
+`tests/lab1/multiple_illegal_characters.sf`).
+
+If any lexical error occurred, **no tokens are printed to stdout at
+all**, stdout stays empty, exit code is 65. A file either scans clean
+(full token stream + EOF + exit 0) or is rejected outright (empty
+stdout + exit 65). There is no partial-output mode.
+
 Message format:
 
 ```
@@ -278,8 +288,12 @@ approval of your own work.]
 
 ## Known limitations
 
-- [What doesn't work, what is unimplemented, where behavior is worse than you
-  would like.]
+- Leading-dot decimal literals (`.42`) are not recognized as one token.
+- Trailing-dot literals (`42.`) are not folded into the number.
+- Underscore digit separators (`4_200`) are not supported.
+- Unary minus is not folded during scanning (`-5` is two tokens; sign
+  handling is deferred to the parser).
+- Block comments (`/* */`) are not implemented [line comments only].
 
 ## Changelog
 
