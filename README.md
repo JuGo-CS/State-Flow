@@ -12,8 +12,8 @@ StateFlow is a general-purpose programming language designed for programs that n
 
 ## Host language and build
 
-- Host language: Kotlin - 262.9437.185-IJ
-- Version metadata: [file that pins it, e.g. rust-toolchain.toml, go.mod]
+- Host language: Kotlin 
+- Version metadata: 2.0.20
 - Build: `./build.sh`
 - [Anything a fresh clone needs to know.]
 
@@ -23,7 +23,7 @@ StateFlow is a general-purpose programming language designed for programs that n
 | Command | What it does |
 |---|---|
 | `./run <file>` | [Executes a program. Available from Lab 4.] |
-| `./run --tokenize <file>` | Scans the source file and prints its token stream. |
+| `./run --tokenize <file>` | Scans the source file and prints its token stream. Available from Lab 1.|
 | `./run --parse <file>` | [Prints the parsed tree.] |
 | `./run --eval <file>` | [Evaluates each expression and prints its value.] |
 | `./run` | [Starts the REPL.] |
@@ -31,8 +31,9 @@ StateFlow is a general-purpose programming language designed for programs that n
 
 ## Exit codes
 - 0 - A successful scan exits with code 0.
-- 65 [when]
-- 70 [when].
+- 65 - The file was read successfully, but the scanner found invalid or malformed input.
+- 66 - The program could not read the file, such as when the file does not exist or cannot be opened.
+- 70 - The scanner started successfully but encountered an unexpected internal failure while processing the file. This will only be used starting in Lab 3.
 
 ## File extension
 
@@ -69,46 +70,65 @@ The following words are reserved and cannot be used as identifiers.
 
 | Operator | Category | Operands | Associativity | Precedence |
 |---|---|---|---|---|
-| [op] | [arithmetic, comparison, logical, assignment, other] | [unary or binary] | [left, right, none] | [1 = loosest] |
+| `!` | logical | unary | right | [TBD] |
+| `!=` | comparison | binary | left | [TBD] |
+| `=` | assignment | binary | right | [TBD] |
+| `==` | comparison | binary | left | [TBD] |
+| `>` | comparison | binary | left | [TBD] |
+| `>=` | comparison | binary | left | [TBD] |
+| `<` | comparison | binary | left | [TBD] |
+| `<=` | comparison | binary | left | [TBD] |
+| `+` | arithmetic | binary | left | [TBD] |
+| `-` | arithmetic | binary or unary | left/right | [TBD] |
+| `*` | arithmetic | binary | left | [TBD] |
+| `/` | arithmetic | binary | left | [TBD] |
+
 
 
 ### Literals
 
-
 | Kind | Syntax | Produces |
 |---|---|---|
-| [number] | [e.g. 42, 3.14] | [what runtime value] |
-| [string] | [e.g. "hello", escapes supported] | [what runtime value] |
-| [boolean] | [true, false] | [what runtime value] |
-| [nil] | [spelling] | [what runtime value] |
+| [number] | `42, 3.14` | A numeric literal |
+| [string] | `"hello"` escapes supported] | A string literal |
+| [boolean] | `true`, `false` | A boolean literal |
+| [nil] | `nil` | A nil value |
+
 
 
 ### Identifiers
 
-- Start characters: [which]
-- Continue characters: [which]
-- Case-sensitive: [yes or no]
-- [Reserved patterns, length limits, or other restrictions.]
+- Start characters: (A-Z, a-z) and underscore (_)
+- Continue characters: Letters, digits (0-9), and underscore (_)
+- Case-sensitive: Yes
+- Identifiers cannot be reserved keywords.
+- Executable files must contain a state named START, which serves as the program's entry point.
+- Executable files must contain a state named END, which serves as the program's end state.
+- START and END are reserved state names and cannot be redefined.
+- Every state except END must explicitly specify a transition using goto <state>.
+- A goto statement must reference an existing state.
+
+
 
 ### Comments
 
-- Line comments: [token]
-- Block comments: [tokens, or "not supported"]
-- Nesting: [supported or not]
+- Line comments: `//`
+- Block comments: Not supported yet
+- Nesting: Not supported
 - [Harness note: comment_prefix in tests/lab*/manifest.json is set to the
   token above.]
 
 ## Whitespace and termination
 
-- Whitespace significant: [yes or no, and where]
-- Statement terminator: [e.g. semicolon, newline, none]
-- Block delimiters: [e.g. braces, indentation]
-- Grouping delimiters: [e.g. parentheses]
+- Whitespace significant: No
+- Statement terminator: `;`
+- Block delimiters: `{` and `}`
+- Grouping delimiters: `(` and `)`
 
 ## Token output format
 
 ```
-[one line of real --tokenize output]
+Token(type=VAR, lexeme=var, literal=null, line=1)
 ```
 
 [What each field means. Frozen as of Lab 1; changes are recorded in the
@@ -185,16 +205,21 @@ true.]
 Message format:
 
 ```
-[one real static error]
-[one real runtime error]
+[line 3] Error: Unexpected character: '@'
+[line 1] Error at ')': Expect expression.
+[line 1] Error at end: Expect end of expression.
 ```
 
+The first is a scanner (lexical) error. The second and third are parser (syntax) errors: `Error at '<lexeme>'` when a specific bad token was found, `Error at end` when the parser ran out of tokens before finding what it needed. [one real runtime error -- not yet possible, no evaluator exists until Lab 3]
+ 
 
 | Failure | Exit code |
 |---|---|
-| [lexical error] | 65 |
-| [syntax error] | 65 |
-| [runtime error] | 70 |
+| Lexical error | 65 |
+| Syntax error | 65 |
+| File read error | 66 |
+| Runtime error | 70 (not yet reachable -- Lab 3) |
+
 
 
 ## Testing conventions
@@ -209,6 +234,9 @@ Message format:
 | tests/lab5 | Functions | inline | none |
 
 
+`tests/lab2/` covers every literal kind, the `term` level (including left-associativity, `1 - 2 - 3`), the `factor` level (including precedence over `term`, `2 + 3 * 4`), comparison, equality (including a comparison nested inside an equality), unary (including double negation, `!!true`), simple and nested grouping, one expression exercising the full six-level chain, and two syntax-error cases (unclosed paren, dangling operator) asserting exit 65 with empty stdout.
+
+
 ```
 [specific tests]...
 ```
@@ -219,17 +247,32 @@ Run locally with:
 curl -sSL https://raw.githubusercontent.com/WhiteLicorice/cmsc-124-harness/v1.1/run_tests.py -o run_tests.py
 ./build.sh
 python3 run_tests.py tests/lab1
+python3 run_tests.py tests/lab2
 ```
 
 ## Sample code
 
 ```
-[a short program]
+state START {
+  var name = input();
+  goto GREETING(name);
+}
+
+state GREETING(name) {
+  requires(name != nil);
+
+  print "Hello, " + name;
+  goto END;
+}
+
+state END {
+}
 ```
 
+```
 Output:
 
-```
+
 [its output]
 ```
 
@@ -249,4 +292,4 @@ approval of your own work.]
 
 | Activity | What changed in the language |
 |---|---|
-| Lab 1 | [entry] |
+| Lab 1 | Added the scanner and defined the lexical structure of StateFlow, including keywords, identifiers, literals, operators, punctuation, whitespace, comments, and lexical error handling. Established `START` as the required entry state and `END` as the required termination state. |
