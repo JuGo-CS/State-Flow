@@ -1,0 +1,3 @@
+Token(type=LESS_EQUAL, lexeme=<=, literal=null, line=1)
+Token(type=GREATER, lexeme=>, literal=null, line=1)
+Token(type=EOF, lexeme=, literal=null, line=1)

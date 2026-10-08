@@ -47,6 +47,7 @@ The following words are reserved and cannot be used as identifiers.
 | **state** | Declares a program state. |
 | **goto** | Transitions execution to another state. |
 | **requires** | Defines a condition that must be satisfied before entering a state. |
+| input | Receives input from the user. |
 | **var** | Declares a variable. |
 | **global** | Declares a variable as used in multiple states. |
 | **fun** | Declares a function. |
@@ -89,10 +90,11 @@ Precedence numbers follow the grammar below: level 1 (`equality`) is evaluated l
 
 | Kind | Syntax | Produces |
 |---|---|---|
-| number | `42`, `3.14` | A numeric literal -- a Kotlin `Double` (whole numbers still parse as, e.g., `42.0`) |
-| string | `"hello"` (escapes supported) | A string literal -- a Kotlin `String`; supports `\n`, `\t`, `\\`, `\"` |
-| boolean | `true`, `false` | A boolean literal |
-| nil | `nil` | A nil value (Kotlin `null`) |
+| Number | `42`, `3.14` | A numeric literal (double-precision). No leading-dot decimals (`.42` scans as DOT then NUMBER), no trailing-dot folding (`42.` scans as NUMBER then DOT), no underscore separators, and no unary-minus folding (`-5` scans as MINUS then NUMBER). |
+| String | `"hello"` | A string literal. Supports `\n`, `\t`, `\\`, `\"` escapes and legal multi-line strings. An unrecognized escape sequence is a lexical error. Empty string `""` is legal. |
+| [boolean] | `true`, `false` | A boolean literal |
+| [nil] | `nil` | A nil value |
+
 
 ### Identifiers
 
@@ -245,6 +247,16 @@ implicitly accessible everywhere.
 
 ## Errors and diagnostics
 
+An unterminated string or an illegal character does not stop scanning
+immediately. The scanner keeps consuming input, so multiple errors in
+one file are all reported to stderr in a single run (see
+`tests/lab1/multiple_illegal_characters.sf`).
+
+If any lexical error occurred, **no tokens are printed to stdout at
+all**, stdout stays empty, exit code is 65. A file either scans clean
+(full token stream + EOF + exit 0) or is rejected outright (empty
+stdout + exit 65). There is no partial-output mode.
+
 Message format:
 
 ```
@@ -354,6 +366,12 @@ Finally, the language has evolved incrementally alongside the laboratory activit
 - `and` / `or` are reserved and scanned, but not wired into the expression grammar -- no logical-expression precedence level exists above `equality`.
 - Function-call syntax (`input()`, etc.) doesn't exist yet, so the Sample code above doesn't fully parse.
 - `--eval` and `./run <file>` are not implemented yet (Lab 3 and Lab 4 respectively).
+- Leading-dot decimal literals (`.42`) are not recognized as one token.
+- Trailing-dot literals (`42.`) are not folded into the number.
+- Underscore digit separators (`4_200`) are not supported.
+- Unary minus is not folded during scanning (`-5` is two tokens; sign
+  handling is deferred to the parser).
+- Block comments (`/* */`) are not implemented [line comments only].
 
 ## Changelog
 

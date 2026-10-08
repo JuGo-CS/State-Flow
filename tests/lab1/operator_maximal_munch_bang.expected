@@ -1,0 +1,3 @@
+Token(type=BANG_EQUAL, lexeme=!=, literal=null, line=1)
+Token(type=EQUAL, lexeme==, literal=null, line=1)
+Token(type=EOF, lexeme=, literal=null, line=1)
