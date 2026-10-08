@@ -125,12 +125,19 @@ Precedence numbers follow the grammar below: level 1 (`equality`) is evaluated l
 
 ## Token output format
 
+
+Each token prints as one line with four fields:
+
 ```
 Token(type=VAR, lexeme=var, literal=null, line=1)
 ```
 
-[What each field means. Frozen as of Lab 1; changes are recorded in the
-changelog.]
+| Field | Meaning |
+|---|---|
+| `type` | The token's category, such as `VAR`, `IDENTIFIER`, `NUMBER` or `PLUS`. |
+| `lexeme` | The exact source text the token was scanned from. For strings it includes the surrounding quotes and unprocessed escapes, e.g. `"hi\n"`. The `EOF` token has an empty lexeme. |
+| `literal` | The token's value, or `null` if it has none. `NUMBER` tokens carry a Kotlin `Double` (`42` is `42.0`). `STRING` tokens carry the string contents without quotes, with escapes resolved. Every other token, including `true`, `false` and `nil`, has `null`. |
+| `line` | The line number the token ends on, counting from 1. A string that spans several lines reports the line of its closing quote. |
 
 ## Grammar
 
