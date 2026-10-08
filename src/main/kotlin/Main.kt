@@ -4,7 +4,6 @@ fun main(args: Array<String>) {
     when {
         args.size == 2 && args[0] == "--tokenize" -> runTokenFile(args[1])
         args.size == 2 && args[0] == "--parse" -> runParseFile(args[1])
-        args.size == 1 -> println("Hello, maayong buntag!")
         args.isEmpty() -> runPrompt()
         else -> {
             exitProcess(64)
@@ -59,13 +58,15 @@ fun runParseFile(path: String) {
     }
 
     val parser = Parser(tokens)
-    val expr = parser.parse()
+    val exprs = parser.parse()
 
-    if (parser.hadError || expr == null) {
+    if (parser.hadError) {
         exitProcess(65)
     }
 
-    println(AstPrinter().print(expr))
+    for (e in exprs) {
+        println(AstPrinter().print(e))
+    }
     exitProcess(0)
 }
 
@@ -76,7 +77,7 @@ fun runPrompt() {
     var line = readLine()
 
     while (line != null) {
-        runScanner(line)
+        parseAndPrintLine(line)
         print("> ")
         line = readLine()
     }
@@ -103,10 +104,12 @@ fun parseAndPrintLine(source: String) {
     }
 
     val parser = Parser(tokens)
-    val expr = parser.parse()
-    if (expr == null) {
+    val exprs = parser.parse()
+    if (parser.hadError) {
         return
     }
 
-    println(AstPrinter().print(expr))
+    for (e in exprs) {
+        println(AstPrinter().print(e))
+    }
 }
