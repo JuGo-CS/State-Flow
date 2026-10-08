@@ -48,6 +48,7 @@ The following words are reserved and cannot be used as identifiers.
 | **goto** | Transitions execution to another state. |
 | **requires** | Defines a condition that must be satisfied before entering a state. |
 | **var** | Declares a variable. |
+| **global** | Declares a variable as used in multiple states. |
 | **fun** | Declares a function. |
 | **if** | Starts a conditional branch. |
 | **else** | Defines the alternative branch of a conditional. |
@@ -62,7 +63,7 @@ The following words are reserved and cannot be used as identifiers.
 | **and** | Logical AND operator. |
 | **or** | Logical OR operator. |
 
-> **Scope note:** this table lists the full language's reserved words. **Lab 2's grammar (below) covers only expressions** -- literals, unary/binary operators, and grouping -- per the activity's own scope. Statement-level constructs (`var`, `print`, `if`, `while`, `for`, `state`, `goto`, `requires`, `global`) are implemented in the parser ahead of schedule, but are not part of what Lab 2 grades and are not yet reflected in the Grammar section. See Known limitations.
+> **Current Scope note:** this table lists the full language's reserved words. **Lab 2's grammar (below) covers only expressions** -- literals, unary/binary operators, and grouping -- per the activity's own scope. Statement-level constructs (`var`, `print`, `if`, `while`, `for`, `state`, `goto`, `requires`, `global`) are implemented in the parser ahead of schedule, but are not part of what Lab 2 grades and are not yet reflected in the Grammar section. See Known limitations.
 
 ### Operators
 
