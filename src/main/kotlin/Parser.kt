@@ -13,13 +13,28 @@ class Parser(private val tokens: List<Token>) {
                 expressions.add(expression())
                 match(TokenType.SEMICOLON)
             } catch (error: ParseError) {
-                synchronize()   // always consumes a token, so it can't loop forever
+                synchronize()   // consume a token
             }
         }
         return expressions
     }
 
-    private fun expression(): Expr = equality()
+    private fun expression(): Expr = assignment()
+
+    private fun assignment(): Expr {
+        val expr = equality()
+
+        if (match(TokenType.EQUAL)) {
+            val equals = previous()
+            val value = assignment()   // recursive, so a = b = c is right-associative
+            if (expr is Expr.Variable) {
+                return Expr.Assign(expr.name, value)
+            }
+            error(equals, "Invalid assignment target.")   // reported, not thrown
+        }
+
+        return expr
+    }
 
     private fun equality(): Expr {
         var expr = comparison()
@@ -81,6 +96,10 @@ class Parser(private val tokens: List<Token>) {
 
         if (match(TokenType.NUMBER, TokenType.STRING)) {
             return Expr.Literal(previous().literal)
+        }
+
+        if (match(TokenType.IDENTIFIER)) {
+            return Expr.Variable(previous())
         }
 
         if (match(TokenType.LEFT_PAREN)) {
