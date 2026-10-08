@@ -2,5 +2,6 @@
 /build/
 /.idea/
 bin/
+.kotlin/
 *.iml
 run_tests.py
