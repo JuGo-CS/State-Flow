@@ -24,7 +24,8 @@ class Scanner(private val source: String) {
             "state" to TokenType.STATE,
             "goto" to TokenType.GOTO,
             "requires" to TokenType.REQUIRES,
-            "input" to TokenType.INPUT
+            "input" to TokenType.INPUT,
+            "global" to TokenType.GLOBAL,
         )
     }
 
@@ -164,7 +165,7 @@ class Scanner(private val source: String) {
     }
 
     private fun isAlpha(c: Char): Boolean =
-        c.isLetter() || c == '_'
+       c in 'a'..'z' || c in 'A'..'Z' || c == '_'
 
     private fun isAlphaNumeric(c: Char): Boolean =
         isAlpha(c) || c.isDigit()
