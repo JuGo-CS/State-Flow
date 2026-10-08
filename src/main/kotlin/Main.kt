@@ -4,6 +4,7 @@ fun main(args: Array<String>) {
     when {
         args.size == 2 && args[0] == "--tokenize" -> runTokenFile(args[1])
         args.size == 2 && args[0] == "--parse" -> runParseFile(args[1])
+        args.size == 1 -> println("Hello, maayong buntag!")
         args.isEmpty() -> runPrompt()
         else -> {
             exitProcess(64)
