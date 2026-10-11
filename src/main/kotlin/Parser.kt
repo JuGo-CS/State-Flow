@@ -11,7 +11,7 @@ class Parser(private val tokens: List<Token>) {
         while (!isAtEnd()) {
             try {
                 expressions.add(expression())
-                match(TokenType.SEMICOLON)
+                consume(TokenType.SEMICOLON, "Expect ';' after expression.")
             } catch (error: ParseError) {
                 synchronize()   // consume a token
             }
