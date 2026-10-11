@@ -1,0 +1,6 @@
+{
+  "ext": ".sf",
+  "flag": "--eval",
+  "mode": "inline",
+  "comment_prefix": "//"
+}

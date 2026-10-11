@@ -3,6 +3,7 @@ import kotlin.system.exitProcess
 fun main(args: Array<String>) {
     when {
         args.size == 2 && args[0] == "--tokenize" -> runTokenFile(args[1])
+        args.size == 2 && args[0] == "--eval" -> runEvalFile(args[1])
         args.size == 2 && args[0] == "--parse" -> runParseFile(args[1])
         args.size == 1 -> println("Hello, maayong buntag!")
         args.isEmpty() -> runPrompt()
@@ -36,11 +37,7 @@ fun scan(source: String): List<Token>? {
 // tokenizer
 fun runTokenFile(path: String) {
     val source = readSourceFile(path)
-    val tokens = scan(source)
-
-    if (tokens == null) {
-        exitProcess(65)
-    }
+    val tokens = scan(source) ?: exitProcess(65)
 
     for (token in tokens) {
         println(token)
@@ -52,11 +49,7 @@ fun runTokenFile(path: String) {
 // parser
 fun runParseFile(path: String) {
     val source = readSourceFile(path)
-    val tokens = scan(source)
-
-    if (tokens == null) {
-        exitProcess(65)
-    }
+    val tokens = scan(source) ?: exitProcess(65)
 
     val parser = Parser(tokens)
     val exprs = parser.parse()
@@ -71,27 +64,62 @@ fun runParseFile(path: String) {
     exitProcess(0)
 }
 
+// evaluator (file mode)
+fun runEvalFile(path: String) {
+    val source = readSourceFile(path)
+    val tokens = scan(source) ?: exitProcess(65)
+
+    val parser = Parser(tokens)
+    val exprs = parser.parse()
+
+    if (parser.hadError) {
+        exitProcess(65)   // static error: rejected before running anything
+    }
+
+    val interpreter = Interpreter()
+    for (e in exprs) {
+        if (!interpreter.interpret(e)) {
+            exitProcess(70)   // runtime error: started, then failed
+        }
+    }
+    exitProcess(0)
+}
+
+// evaluator (REPL, one line)
+fun evalAndPrintLine(source: String, interpreter: Interpreter) {
+    val tokens = scan(source) ?: return
+
+    val parser = Parser(tokens)
+    val exprs = parser.parse()
+    if (parser.hadError) {
+        return
+    }
+
+    for (e in exprs) {
+        if (!interpreter.interpret(e)) {
+            return   // error already printed; just show the prompt again
+        }
+    }
+}
+
 
 // REPL
 fun runPrompt() {
+    val interpreter = Interpreter()
     print("> ")
-    var line = readLine()
+    var line = readlnOrNull()
 
     while (line != null) {
-        parseAndPrintLine(line)
+        evalAndPrintLine(line, interpreter)
         print("> ")
-        line = readLine()
+        line = readlnOrNull()
     }
 
     println()
 }
 
 fun runScanner(source: String) {
-    val tokens = scan(source)
-
-    if (tokens == null) {
-        return
-    }
+    val tokens = scan(source) ?: return
 
     for (token in tokens) {
         println(token)
@@ -99,10 +127,7 @@ fun runScanner(source: String) {
 }
 
 fun parseAndPrintLine(source: String) {
-    val tokens = scan(source)
-    if (tokens == null) {
-        return
-    }
+    val tokens = scan(source) ?: return
 
     val parser = Parser(tokens)
     val exprs = parser.parse()
