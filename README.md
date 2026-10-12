@@ -23,9 +23,9 @@ StateFlow is a general-purpose programming language designed for programs that n
 |---|---|
 | `./run <file>` | [Executes a program. Available from Lab 4.] |
 | `./run --tokenize <file>` | Scans the source file and prints its token stream. Available from Lab 1. |
-| `./run --parse <file>` | Parses the file and prints one tree per expression statement, in prefix parenthesized form. Available from Lab 2. |
+| `./run --parse <file>` | Parses the file and prints one tree per `;`-terminated expression, in prefix parenthesized form. Available from Lab 2. |
 | `./run --eval <file>` | [Evaluates each expression and prints its value. Available from Lab 3.] |
-| `./run` | Starts the REPL: reads one line of input at a time and prints its token stream (same output as `--tokenize`, applied per line). |
+| `./run` | Starts the REPL: reads one line of input at a time and prints its parse (same output as `--parse`, applied per line). Each expression must end with `;`, e.g. `> 1 + 2;`. A syntax error prints its message and returns the prompt. |
 
 ## Exit codes
 - 0 - A successful scan (or parse) exits with code 0.
@@ -64,7 +64,7 @@ The following words are reserved and cannot be used as identifiers.
 | **and** | Logical AND operator. |
 | **or** | Logical OR operator. |
 
-> **Current Scope note:** this table lists the full language's reserved words. **Lab 2's grammar (below) covers only expressions** -- literals, unary/binary operators, and grouping -- per the activity's own scope. Statement-level constructs (`var`, `print`, `if`, `while`, `for`, `state`, `goto`, `requires`, `global`) are implemented in the parser ahead of schedule, but are not part of what Lab 2 grades and are not yet reflected in the Grammar section. See Known limitations.
+> **Current Scope note:** this table lists the full language's reserved words. **Lab 2's grammar (below) covers only expressions** -- literals, variables, unary/binary operators, grouping, and assignment. Statement-level constructs (`var`, `print`, `if`, `while`, `for`, `state`, `goto`, `requires`, `global`) are scanned as keywords, and their AST node definitions exist in `Statement.kt`, but the parser does not parse them yet. See Known limitations. See Known limitations.
 
 ### Operators
 
@@ -82,9 +82,9 @@ The following words are reserved and cannot be used as identifiers.
 | `<=` | comparison | binary | left | 2 |
 | `!=` | equality | binary | left | 1 (loosest) |
 | `==` | equality | binary | left | 1 (loosest) |
-| `=` | assignment | binary | right | not covered by Lab 2's grammar -- implemented, belongs to the statement-level work noted above |
+| `=` | assignment | binary | right | 0 (below equality, loosest of all) |
 
-Precedence numbers follow the grammar below: level 1 (`equality`) is evaluated last/loosest, level 5 (`unary`) is evaluated first/tightest, matching the convention "1 = loosest."
+Precedence numbers follow the grammar below: level 0 (`assignment`) is the loosest, level 1 (`equality`) comes next, and level 5 (`unary`) is evaluated first/tightest, matching the convention "lower number = looser."
 
 ### Literals
 
@@ -142,18 +142,20 @@ Token(type=VAR, lexeme=var, literal=null, line=1)
 ## Grammar
 
 ```
-expression -> equality
+program    -> ( expression ";" )* EOF
+expression -> assignment
+assignment -> IDENTIFIER "=" assignment | equality
 equality   -> comparison ( ( "!=" | "==" ) comparison )*
 comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )*
 term       -> factor ( ( "-" | "+" ) factor )*
 factor     -> unary ( ( "/" | "*" ) unary )*
 unary      -> ( "!" | "-" ) unary | primary
-primary    -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")"
+primary    -> NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil" | "(" expression ")"
 ```
 
-One expression per `--parse`-able unit, as described in the current activity. `and`/`or` are reserved keywords but not part of this grammar -- no logical-expression rule exists above `equality`.
+The first rule is the file-splitting rule: a file is a sequence of expressions, and **every** expression ends with `;`, including the last one. The `assignment` rule is right-recursive on purpose, so `a = b = c` means `a = (b = c)`. The left side of `=` is parsed as an ordinary expression first and then checked: if it is not a plain identifier (e.g. `1 + 2 = 3;`), the parser reports `Invalid assignment target.` and carries on. `and`/`or` are reserved keywords but not part of this grammar -- no logical-expression rule exists between `assignment` and `equality`.
 
-> **Beyond Lab 2:** the parser also accepts statement-level constructs (`var`, `print`, `if`, `while`, `for`, `global`, `state`, `goto`, `requires`) built ahead of the activities that actually require them (Lab 4/5). That grammar is intentionally not documented here, since it isn't what Lab 2 grades and documenting it here would make this section describe more than the activity asked for. It belongs in this README once the corresponding lab is in scope.
+> **Beyond Lab 2:** statement-level constructs (`var`, `print`, `if`, `while`, `for`, `global`, `state`, `goto`, `requires`) are not parsed yet (Lab 4/5). This grammar describes only what the parser currently accepts.
 
 ## Parse output format
 
@@ -165,10 +167,17 @@ One expression per `--parse`-able unit, as described in the current activity. `a
 - Numbers print as: Kotlin's default `Double.toString()` -- a whole number keeps its decimal point, e.g. `2.0`, not `2`
 - Strings print as their raw content, with no surrounding quotes, e.g. `hello`
 - Booleans print as `true` / `false`; `nil` prints as `nil`
+- Variables print as their name, e.g. `x`
+- Assignments print as `(= <name> <expr>)`, e.g. `x = 1;` prints `(= x 1.0)`
 
 ## File-splitting rule
 
-Each expression in a file must be a complete statement terminated by `;`. `--parse` prints one tree per expression statement, in file order, one per output line. This is the semicolon-terminator option the activity names as an alternative to one-expression-per-line (and happens to match this language's own `;` statement terminator, already documented above), rather than relying on newlines to separate expressions.
+Every expression in a file must be terminated by `;`, including the last one. Newlines are ignored, so one expression may span several lines and several expressions may share a line. `--parse` prints one tree per expression, in file order, one per output line. This is the semicolon-terminator option the activity names as an alternative to one-expression-per-line, and it matches this language's own `;` statement terminator.
+
+- A missing `;` is a syntax error: `Expect ';' after expression.`
+- A stray `;` with no expression before it (e.g. `;;`) is a syntax error: `Expect expression.`
+- An empty file (or one holding only comments) is valid: nothing is printed and the exit code is 0.
+- The same rule applies in the REPL, one line at a time.
 
 ## Semantics
 
@@ -269,10 +278,10 @@ Message format:
 ```
 [line 3] Error: Unexpected character: '@'
 [line 1] Error at ')': Expect expression.
-[line 1] Error at end: Expect end of expression.
+[line 1] Error at end: Expect ';' after expression.
 ```
 
-The first is a scanner (lexical) error. The second and third are parser (syntax) errors: `Error at '<lexeme>'` when a specific bad token was found, `Error at end` when the parser ran out of tokens before finding what it needed. [one real runtime error -- not yet possible, no evaluator exists until Lab 3]
+The first is a scanner (lexical) error. The second and third are parser (syntax) errors: `Error at '<lexeme>'` when a specific bad token was found, `Error at end` when the parser ran out of tokens before finding what it needed. After a syntax error the parser skips ahead to just past the next `;` and keeps parsing, so several syntax errors in one file are all reported in a single run.
 
 | Failure | Exit code |
 |---|---|
@@ -291,9 +300,7 @@ The first is a scanner (lexical) error. The second and third are parser (syntax)
 | tests/lab4 | Context | inline | none |
 | tests/lab5 | Functions | inline | none |
 
-`tests/lab2/` covers every literal kind, the `term` level (including left-associativity, `1 - 2 - 3`), the `factor` level (including precedence over `term`, `2 + 3 * 4`), comparison, equality (including a comparison nested inside an equality), unary (including double negation, `!!true`), simple and nested grouping, one expression exercising the full six-level chain, and two syntax-error cases (unclosed paren, dangling operator) asserting exit 65 with empty stdout.
-
-`tests/lab2-statements/` (supplementary, not part of the graded Lab 2 suite) covers the ahead-of-schedule statement grammar noted above.
+`tests/lab2/` covers every literal kind, the `term` level (including left-associativity, `1 - 2 - 3`), the `factor` level (including precedence over `term`, `2 + 3 * 4`), comparison, equality (including a comparison nested inside an equality), unary (including double negation, `!!true`), simple and nested grouping, one expression exercising the full six-level chain, and syntax-error cases (unclosed paren, dangling operator, missing `;`) asserting exit 65 with empty stdout. Every expression in every `tests/lab2/*.sf` file ends with `;`.
 
 Run locally with:
 
@@ -351,11 +358,11 @@ The language is dynamically typed. We chose not to require type declarations for
 
 The expression grammar uses separate precedence levels for equality, comparison, arithmetic terms, factors, unary operators, and primary expressions. This structure was chosen so that familiar expressions such as `2 + 3 * 4` can be interpreted according to conventional precedence rules without requiring excessive parentheses. Binary operators are left-associative where appropriate, while unary operators are right-associative. Assignment is treated differently from ordinary arithmetic and comparison operations because its purpose is to update a variable binding rather than simply combine two independently evaluated values.
 
-Assignment is represented as its own expression form in the AST. A variable expression represents reading the value associated with a name, while an assignment represents writing a value to that name. Keeping these concepts distinct prevents the left side of an assignment from being treated simply as another expression to evaluate. Assignment also produces the value that was assigned, allowing it to participate in larger expressions.
+Assignment is represented as its own expression form in the AST (`Expr.Assign`), parsed by an `assignment` rule that sits above `equality`. A variable expression represents reading the value associated with a name, while an assignment represents writing a value to that name. Keeping these concepts distinct prevents the left side of an assignment from being treated simply as another expression to evaluate. Assignment also produces the value that was assigned, allowing it to participate in larger expressions.
 
 We included common programming constructs such as `var`, `if`, `else`, `while`, `for`, `fun`, `return`, `print`, and `input` because StateFlow is intended to be a general-purpose language rather than a language limited to state transitions. States provide the higher-level structure of a program, while these constructs provide the ordinary computation and interaction needed within those states. Logical operators such as `and` and `or` were also reserved as part of the intended language design, although they are not yet included in the Lab 2 expression grammar.
 
-Some features were deliberately kept out of the current Lab 2 grammar even though parts of their implementation already exist. The Lab 2 grammar focuses only on expressions, covering literals, grouping, unary operators, arithmetic, comparison, and equality. Statement-level constructs were implemented ahead of schedule so that later work could build on them, but they are not documented as part of the graded Lab 2 grammar. This distinction was kept in the README to avoid making the documented grammar larger than the scope of the activity.
+Some features were deliberately kept out of the current Lab 2 grammar. The Lab 2 grammar focuses only on expressions, covering literals, variables, grouping, unary operators, arithmetic, comparison, equality, and assignment. Statement-level constructs are scanned as keywords and have AST node definitions, but the parser does not handle them yet. This keeps the documented grammar identical to what the parser accepts.
 
 We also chose to use `.sf` as the source-file extension and reserve `START` and `END` as state names. These conventions distinguish StateFlow source files from ordinary files and establish consistent entry and termination points for executable programs. Similarly, identifiers are case-sensitive and cannot use reserved keywords, preventing ambiguity between language constructs and user-defined names.
 
@@ -363,13 +370,13 @@ The language currently uses `//` for line comments and does not support block co
 
 The implementation is written in Kotlin, while StateFlow itself remains independent of the implementation language. Kotlin was chosen as the host language for the compiler/interpreter implementation, while the language design focuses on the syntax and semantics experienced by StateFlow programmers.
 
-Finally, the language has evolved incrementally alongside the laboratory activities. Lab 1 established the scanner and lexical structure, while Lab 2 introduced the recursive-descent expression parser and AST. Some statement-level and state-related features were implemented ahead of the activity that formally requires them. This means that the current implementation contains features that are part of the intended language but are not yet part of the documented or graded grammar. The design therefore intentionally distinguishes between the current implementation, the current laboratory scope, and the eventual target language rather than treating every implemented feature as already finalized.
+Finally, the language has evolved incrementally alongside the laboratory activities. Lab 1 established the scanner and lexical structure, while Lab 2 introduced the recursive-descent expression parser and AST. Statement-level and state-related features are part of the intended language but are not parsed yet. The design therefore distinguishes between the current implementation and the eventual target language, and the Grammar section only ever describes the former.
 
 
 ## Known limitations
 
-- Lab 2's grammar (documented above) covers expressions only. Statement-level constructs are implemented in the parser ahead of the labs that require them, and are explicitly out of scope for what Lab 2 grades.
-- Every expression in a file must end with `;` -- there's no bare "one expression per line" mode.
+- Lab 2's grammar (documented above) covers expressions only. Statement-level constructs (`var`, `print`, `if`, `state`, `goto`, ...) are scanned but not parsed yet.
+- Every expression in a file, including the last, must end with `;` -- there's no bare "one expression per line" mode, and the REPL needs the `;` too.
 - `and` / `or` are reserved and scanned, but not wired into the expression grammar -- no logical-expression precedence level exists above `equality`.
 - Function-call syntax (`input()`, etc.) doesn't exist yet, so the Sample code above doesn't fully parse.
 - `--eval` and `./run <file>` are not implemented yet (Lab 3 and Lab 4 respectively).
@@ -385,4 +392,4 @@ Finally, the language has evolved incrementally alongside the laboratory activit
 | Activity | What changed in the language |
 |---|---|
 | Lab 1 | Added the scanner and defined the lexical structure of StateFlow, including keywords, identifiers, literals, operators, punctuation, whitespace, comments, and lexical error handling. Established `START` as the required entry state and `END` as the required termination state. |
-| Lab 2 | Added the parser: a six-level recursive-descent expression grammar (`equality` -> `comparison` -> `term` -> `factor` -> `unary` -> `primary`) producing an `Expr` AST, plus `AstPrinter` for `--parse`'s prefix-parenthesized output. Expressions are terminated by `;`. (Statement-level grammar was also built this cycle, ahead of schedule -- see Known limitations.) |
+| Lab 2 | Added the parser: a recursive-descent expression grammar (`assignment` -> `equality` -> `comparison` -> `term` -> `factor` -> `unary` -> `primary`) producing an `Expr` AST, plus `AstPrinter` for `--parse`'s prefix-parenthesized output. Every expression must be terminated by `;`. The REPL now prints parses instead of tokens. |
