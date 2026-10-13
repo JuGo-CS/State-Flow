@@ -47,14 +47,23 @@ class Interpreter {
 
     // helpers
 
-    // the language's truthiness rule (decide, then document in README)
+    // falsey: nil, false, 0, ""   (everything else is truthy)
     private fun isTruthy(value: Any?): Boolean {
-        TODO("e.g. false and nil are falsey, everything else truthy")
+        if (value == null) return false
+        if (value is Boolean) return value
+        if (value is Double) return value != 0.0
+        if (value is String) return value.isNotEmpty()
+
+        return true
     }
 
     // == and != work on any pair of types; use value equality, not reference
     private fun isEqual(a: Any?, b: Any?): Boolean {
-        TODO("nil == nil, otherwise a == b")
+        if (a == null && b == null) return true
+        if (a == null || b == null) return false
+        if (a is Double && b is Double) return a == b
+        
+        return a == b
     }
 
     private fun checkNumberOperand(operator: Token, operand: Any?) {
