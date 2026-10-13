@@ -3,16 +3,19 @@ class Environment {
 
     // create or overwrite a variable
     fun define(name: String, value: Any?) {
-        TODO("store value under name")
+        values[name] = value
     }
 
     // read a variable; throw RuntimeError(name, "Undefined variable 'x'.") if missing
     fun get(name: Token): Any? {
-        TODO("look up name.lexeme")
+        if (values.containsKey(name.lexeme)) {
+            return values[name.lexeme]
+        }
+        throw RuntimeError(name, "Undefined variable '${name.lexeme}'.")
     }
 
     // x = value; (no var yet, so this also creates the variable)
     fun assign(name: Token, value: Any?) {
-        TODO("store value under name.lexeme")
+        values[name.lexeme] = value
     }
 }
