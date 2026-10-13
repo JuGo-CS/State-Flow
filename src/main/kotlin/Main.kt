@@ -85,24 +85,6 @@ fun runEvalFile(path: String) {
     exitProcess(0)
 }
 
-// evaluator (REPL, one line)
-fun evalAndPrintLine(source: String, interpreter: Interpreter) {
-    val tokens = scan(source) ?: return
-
-    val parser = Parser(tokens)
-    val exprs = parser.parse()
-    if (parser.hadError) {
-        return
-    }
-
-    for (e in exprs) {
-        if (!interpreter.interpret(e)) {
-            return   // error already printed; just show the prompt again
-        }
-    }
-}
-
-
 // REPL
 fun runPrompt() {
     val interpreter = Interpreter()
@@ -137,5 +119,22 @@ fun parseAndPrintLine(source: String) {
 
     for (e in exprs) {
         println(AstPrinter().print(e))
+    }
+}
+
+// evaluator (REPL, one line)
+fun evalAndPrintLine(source: String, interpreter: Interpreter) {
+    val tokens = scan(source) ?: return
+
+    val parser = Parser(tokens)
+    val exprs = parser.parse()
+    if (parser.hadError) {
+        return
+    }
+
+    for (e in exprs) {
+        if (!interpreter.interpret(e)) {
+            return   // error already printed; just show the prompt again
+        }
     }
 }
