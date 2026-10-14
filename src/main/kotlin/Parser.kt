@@ -6,17 +6,15 @@ class Parser(private val tokens: List<Token>) {
 
     private class ParseError : RuntimeException()
 
-    fun parse(): List<Expr> {
-        val expressions = mutableListOf<Expr>()
-        while (!isAtEnd()) {
-            try {
-                expressions.add(expression())
-                consume(TokenType.SEMICOLON, "Expect ';' after expression.")
-            } catch (error: ParseError) {
-                synchronize()   // consume a token
-            }
+    fun parse(): Expr? {
+        return try {
+            val expr = expression()
+            consume(TokenType.SEMICOLON, "Expect ';' after expression.")
+            expr
+        } catch (error: ParseError) {
+            synchronize()
+            null
         }
-        return expressions
     }
 
     private fun expression(): Expr = assignment()
@@ -117,7 +115,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun previous(): Token = tokens[current - 1]
 
-    private fun isAtEnd(): Boolean = peek().type == TokenType.EOF
+    fun isAtEnd(): Boolean = peek().type == TokenType.EOF
 
     private fun advance(): Token {
         if (!isAtEnd()) current++
