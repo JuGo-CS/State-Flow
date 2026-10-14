@@ -59,16 +59,20 @@ fun runParseFile(path: String) {
     }
 
     val parser = Parser(tokens)
+    val output = StringBuilder()
+    
     while (!parser.isAtEnd()) {
         val expr = parser.parse()
         if (expr != null) {
-            println(AstPrinter().print(expr))
+            output.append(AstPrinter().print(expr)).append('\n')
         }
     }
 
     if (parser.hadError) {
         exitProcess(65)
     }
+    
+    print(output)  
     
     exitProcess(0)
 }
