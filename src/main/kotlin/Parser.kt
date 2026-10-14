@@ -6,7 +6,7 @@ class Parser(private val tokens: List<Token>) {
 
     private class ParseError : RuntimeException()
 
-    fun parse(): List<Expr> {
+    fun parse(): Program {
         val expressions = mutableListOf<Expr>()
         while (!isAtEnd()) {
             try {
@@ -16,7 +16,7 @@ class Parser(private val tokens: List<Token>) {
                 synchronize()   // consume a token
             }
         }
-        return expressions
+        return Program(expressions)
     }
 
     private fun expression(): Expr = assignment()
