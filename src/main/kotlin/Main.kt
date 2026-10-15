@@ -65,9 +65,7 @@ fun runParseFile(path: String) {
         exitProcess(65)
     }
 
-    for (e in program.expressions) {
-        println(AstPrinter().print(e))
-    }
+    println(AstPrinter().print(program))
     exitProcess(0)
 }
 
@@ -110,7 +108,5 @@ fun parseAndPrintLine(source: String) {
         return
     }
 
-    for (e in program.expressions) {
-        println(AstPrinter().print(e))
-    }
+    println(AstPrinter().print(program))
 }
