@@ -1,17 +1,21 @@
 class Interpreter {
     private val environment = Environment()
     
+    // entry point
     fun interpret(expr: Expr): Boolean {
         return try {
+            // compute the value and print
             val value = evaluate(expr)
             println(stringify(value))
             true
         } catch (error: RuntimeError) {
+            // report the runtime error and signal failure
             reportRuntimeError(error)
             false
         }
     }
 
+    // check the node
     fun evaluate(expr: Expr): Any? = when (expr) {
         is Expr.Literal -> evalLiteral(expr)
         is Expr.Grouping -> evalGrouping(expr)
@@ -21,28 +25,94 @@ class Interpreter {
         is Expr.Assign -> evalAssign(expr)
     }
 
-    private fun evalLiteral(expr: Expr.Literal): Any? {
-        TODO("return expr.value")
-    }
+    // return immediately if literal
+    private fun evalLiteral(expr: Expr.Literal): Any? = expr.value
 
-    private fun evalGrouping(expr: Expr.Grouping): Any? {
-        TODO("evaluate the inner expression")
-    }
+    // evaluate the inside of parenthesis
+    private fun evalGrouping(expr: Expr.Grouping): Any? = evaluate(expr.expression)
 
     private fun evalUnary(expr: Expr.Unary): Any? {
-        TODO("evaluate operand first; '-' needs a number, '!' uses isTruthy")
+
+        // evaluate the operand
+        val operand = evaluate(expr.right)
+
+        return when (expr.operator.type) {
+    
+            TokenType.MINUS -> {
+                checkNumberOperand(expr.operator, operand)
+                -(operand as Double)
+            }
+            TokenType.BANG -> !isTruthy(operand)
+
+            // safety throw
+            else -> throw RuntimeError(expr.operator, "Unknown unary operator.")
+        }
     }
 
     private fun evalBinary(expr: Expr.Binary): Any? {
-        TODO("evaluate left, then right, then apply operator (+ - * / < <= > >= == !=)")
+        val left = evaluate(expr.left)
+        val right = evaluate(expr.right)
+        val op = expr.operator
+
+        return when (op.type) {
+            // add two numbers or join strings
+            TokenType.PLUS -> when {
+                left is Double && right is Double -> left + right
+                left is String && right is String -> left + right
+                else -> throw RuntimeError(op, "Operands must be two numbers or two strings.")
+            }
+
+            // arithmetic, both must be numbers
+            TokenType.MINUS -> {
+                checkNumberOperands(op, left, right)
+                (left as Double) - (right as Double)
+            }
+            TokenType.STAR -> {
+                checkNumberOperands(op, left, right)
+                (left as Double) * (right as Double)
+            }
+            TokenType.SLASH -> {
+                checkNumberOperands(op, left, right)
+                if ((right as Double) == 0.0) throw RuntimeError(op, "Division by zero.")
+                (left as Double) / right
+            }
+
+            // comparisons, both types must be numbers; return boolean
+            TokenType.GREATER -> {
+                checkNumberOperands(op, left, right)
+                (left as Double) > (right as Double)
+            }
+            TokenType.GREATER_EQUAL -> {
+                checkNumberOperands(op, left, right)
+                (left as Double) >= (right as Double)
+            }
+            TokenType.LESS -> {
+                checkNumberOperands(op, left, right)
+                (left as Double) < (right as Double)
+            }
+            TokenType.LESS_EQUAL -> {
+                checkNumberOperands(op, left, right)
+                (left as Double) <= (right as Double)
+            }
+
+            // equality, any two values
+            TokenType.EQUAL_EQUAL -> isEqual(left, right)
+            TokenType.BANG_EQUAL -> !isEqual(left, right)
+            else -> throw RuntimeError(op, "Unknown binary operator.")
+        }
     }
 
-    private fun evalVariable(expr: Expr.Variable): Any? {
-        TODO("environment.get(expr.name)")
-    }
+    // look up value of variable by the name
+    private fun evalVariable(expr: Expr.Variable): Any? = environment.get(expr.name)
+
 
     private fun evalAssign(expr: Expr.Assign): Any? {
-        TODO("evaluate value, environment.assign, return the value")
+
+        // compute right side and store
+        val value = evaluate(expr.value)
+        environment.assign(expr.name, value)
+
+        return value
     }
 
     // helpers
@@ -67,17 +137,25 @@ class Interpreter {
     }
 
     private fun checkNumberOperand(operator: Token, operand: Any?) {
-        TODO("throw RuntimeError(operator, \"Operand must be a number.\") if not Double")
+        if (operand is Double) return
+        throw RuntimeError(operator, "Operand must be a number.")
     }
 
     private fun checkNumberOperands(operator: Token, left: Any?, right: Any?) {
-        TODO("throw RuntimeError(operator, \"Operands must be numbers.\") unless both Double")
+        if (left is Double && right is Double) return
+        throw RuntimeError(operator, "Operands must be numbers.")
     }
 
     // how a value prints (decide, then document in README):
     // numbers (trim ".0"?), nil, strings without quotes, booleans
     private fun stringify(value: Any?): String {
-        TODO("format a runtime value for output")
+        if (value == null) return "nil"
+        if (value is Double) {
+            val isWhole = !value.isInfinite() && !value.isNaN() && value == Math.floor(value)
+            if (isWhole && Math.abs(value) < 1e15) return value.toLong().toString()
+            return value.toString()
+        }
+        return value.toString()
     }
 
     private fun reportRuntimeError(error: RuntimeError) {
