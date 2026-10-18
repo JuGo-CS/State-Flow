@@ -1,0 +1,7 @@
+(1 + 2) * 3;                                // expect: 9
+((4));                                      // expect: 4
+(("a"));                                    // expect: a
+-(1 + 2);                                   // expect: -3
+(1 < 2);                                    // expect: true
+2 * (3 + 4);                                // expect: 14
+1 - (2 - 3);                                // expect: 2

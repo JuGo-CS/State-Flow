@@ -1,0 +1,3 @@
+"a" + "b";                                  // expect: ab
+"foo" + "bar" + "baz";                      // expect: foobarbaz
+"hello" + " " + "world";                    // expect: hello world
