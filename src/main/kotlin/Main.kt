@@ -59,15 +59,13 @@ fun runParseFile(path: String) {
     }
 
     val parser = Parser(tokens)
-    val exprs = parser.parse()
+    val program = parser.parse()
 
     if (parser.hadError) {
         exitProcess(65)
     }
 
-    for (e in exprs) {
-        println(AstPrinter().print(e))
-    }
+    println(AstPrinter().print(program))
     exitProcess(0)
 }
 
@@ -105,12 +103,10 @@ fun parseAndPrintLine(source: String) {
     }
 
     val parser = Parser(tokens)
-    val exprs = parser.parse()
+    val program = parser.parse()
     if (parser.hadError) {
         return
     }
 
-    for (e in exprs) {
-        println(AstPrinter().print(e))
-    }
+    println(AstPrinter().print(program))
 }
