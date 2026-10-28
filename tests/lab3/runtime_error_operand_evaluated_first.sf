@@ -1,1 +1,1 @@
-(1 + "a") * 2;                              // expect runtime error: Operands must be two numbers or two strings.
+(1 + "a") * 2;                              // expect runtime error: Operands must be numbers.

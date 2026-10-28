@@ -1,3 +1,7 @@
 "a" + "b";                                  // expect: ab
 "foo" + "bar" + "baz";                      // expect: foobarbaz
 "hello" + " " + "world";                    // expect: hello world
+"n: " + 5;                                  // expect: n: 5
+"a" + nil;                                  // expect: anil
+1 + 2 + "a";                                // expect: 3a
+"a" + 1 + 2;                                // expect: a12
