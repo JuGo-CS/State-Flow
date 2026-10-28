@@ -1,5 +1,5 @@
 class Interpreter {
-    private val environment = Environment()
+    private var environment = Environment()
     
     // entry point
     fun interpret(expr: Expr): Boolean {
@@ -146,7 +146,6 @@ class Interpreter {
         throw RuntimeError(operator, "Operands must be numbers.")
     }
 
-    // how a value prints (decide, then document in README):
     // numbers (trim ".0"?), nil, strings without quotes, booleans
     private fun stringify(value: Any?): String {
         if (value == null) return "nil"

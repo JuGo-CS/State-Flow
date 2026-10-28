@@ -7,5 +7,6 @@ sealed class Expr {
     data class Variable(val name: Token) : Expr()
     data class Assign(val name: Token, val value: Expr) : Expr()
     
-    data class Program(val expressions: List<Expr>) : Expr()
 }
+
+data class Program(val expressions: List<Expr>) : Expr()

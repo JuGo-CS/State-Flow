@@ -58,7 +58,10 @@ fun runParseFile(path: String) {
         exitProcess(65)
     }
 
-    println(AstPrinter().print(program))
+    // an empty or comment-only file prints nothing
+    if (program.expressions.isNotEmpty()) {
+        println(AstPrinter().print(program))
+    }
     exitProcess(0)
 }
 
@@ -68,14 +71,14 @@ fun runEvalFile(path: String) {
     val tokens = scan(source) ?: exitProcess(65)
 
     val parser = Parser(tokens)
-    val exprs = parser.parse()
+    val program = parser.parse()
 
     if (parser.hadError) {
         exitProcess(65)   // static error: rejected before running anything
     }
 
     val interpreter = Interpreter()
-    for (e in exprs) {
+    for (e in program.expressions) {
         if (!interpreter.interpret(e)) {
             exitProcess(70)   // runtime error: started, then failed
         }
@@ -85,7 +88,7 @@ fun runEvalFile(path: String) {
 
 // REPL
 fun runPrompt() {
-    val interpreter = Interpreter()
+    val interpreter = Interpreter()   // one for the whole session, so variables persist
     print("> ")
     var line = readlnOrNull()
 
@@ -98,15 +101,8 @@ fun runPrompt() {
     println()
 }
 
-fun runScanner(source: String) {
-    val tokens = scan(source) ?: return
-
-    for (token in tokens) {
-        println(token)
-    }
-}
-
-fun parseAndPrintLine(source: String) {
+// evaluator (REPL, one line)
+fun evalAndPrintLine(source: String, interpreter: Interpreter) {
     val tokens = scan(source) ?: return
 
     val parser = Parser(tokens)
@@ -115,22 +111,7 @@ fun parseAndPrintLine(source: String) {
         return
     }
 
-    for (e in exprs) {
-        println(AstPrinter().print(e))
-    }
-}
-
-// evaluator (REPL, one line)
-fun evalAndPrintLine(source: String, interpreter: Interpreter) {
-    val tokens = scan(source) ?: return
-
-    val parser = Parser(tokens)
-    val exprs = parser.parse()
-    if (parser.hadError) {
-        return
-    }
-
-    for (e in exprs) {
+    for (e in program.expressions) {
         if (!interpreter.interpret(e)) {
             return   // error already printed; just show the prompt again
         }
