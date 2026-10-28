@@ -1,5 +1,7 @@
 class AstPrinter {
     fun print(expr: Expr): String = when (expr) {
+        is Expr.Program -> expr.expressions.joinToString("\n") { print(it) }
+        
         is Expr.Literal -> stringify(expr.value)
         is Expr.Grouping -> parenthesize("group", expr.expression)
         is Expr.Binary -> parenthesize(expr.operator.lexeme, expr.left, expr.right)
