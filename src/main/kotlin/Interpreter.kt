@@ -23,6 +23,14 @@ class Interpreter {
         is Expr.Binary -> evalBinary(expr)
         is Expr.Variable -> evalVariable(expr)
         is Expr.Assign -> evalAssign(expr)
+        
+        is Expr.Program -> {
+            var lastValue: Any? = null
+            for (e in expr.expressions) {
+                lastValue = evaluate(e)
+            }
+            lastValue
+        }
     }
 
     // return immediately if literal
@@ -58,8 +66,8 @@ class Interpreter {
             // add two numbers or join strings
             TokenType.PLUS -> when {
                 left is Double && right is Double -> left + right
-                left is String && right is String -> left + right
-                else -> throw RuntimeError(op, "Operands must be two numbers or two strings.")
+                left is String || right is String -> stringify(left) + stringify(right)
+                else -> throw RuntimeError(op, "Operands must be two numbers or at least one string.")
             }
 
             // arithmetic, both must be numbers
