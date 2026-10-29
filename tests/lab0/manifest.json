@@ -1,5 +1,5 @@
 {
-  "ext": ".fs",
+  "ext": ".sf",
   "mode": "sidecar",
   "run_entrypoint": "./run"
 }
