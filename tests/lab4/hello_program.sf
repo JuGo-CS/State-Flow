@@ -1,0 +1,8 @@
+state START {
+  print "hello from START";   // expect: hello from START
+  goto END;
+}
+
+state END {
+  print "bye from END";       // expect: bye from END
+}

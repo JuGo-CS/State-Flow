@@ -1,0 +1,12 @@
+state START {
+  var x = "outer";
+  {
+    var x = "inner";
+    print x;          // expect: inner
+  }
+  print x;            // expect: outer
+  goto END;
+}
+
+state END {
+}

@@ -1,0 +1,8 @@
+state START {
+  var x = 1           // expect error: Expect ';' after variable declaration.
+  print x;
+  goto END;
+}
+
+state END {
+}
