@@ -10,3 +10,4 @@
 !!"hi";                                     // expect: true
 !!nil;                                      // expect: false
 !!!true;                                    // expect: false
+!"0";                                       // expect: false

@@ -1,5 +1,21 @@
+import kotlin.math.abs
+import kotlin.math.floor
+
 class Interpreter {
-    private var environment = Environment()
+    // outermost scope, global variables live here
+    private val globals = Environment()
+
+    // scope currently in use
+    private var environment = globals
+
+    // all states by name, so goto can find its target
+    private val states = HashMap<String, Statement.State>()
+
+    // state running now, null in the REPL
+    private var currentState: Token? = null
+
+    // thrown by goto to leave the current state and enter another
+    private class GotoSignal(val target: Statement.State, val arguments: List<Any?>) : RuntimeException()
     
     // entry point
     fun interpret(expr: Expr): Boolean {
@@ -58,8 +74,8 @@ class Interpreter {
             // add two numbers or join strings
             TokenType.PLUS -> when {
                 left is Double && right is Double -> left + right
-                left is String && right is String -> left + right
-                else -> throw RuntimeError(op, "Operands must be two numbers or two strings.")
+                left is String || right is String -> stringify(left) + stringify(right)
+                else -> throw RuntimeError(op, "Operands must be two numbers or at least one string.")
             }
 
             // arithmetic, both must be numbers
@@ -115,6 +131,171 @@ class Interpreter {
         return value
     }
 
+    // run a whole program, false means a runtime error
+    fun runProgram(statements: List<Statement>): Boolean {
+        try {
+            // remember every state by name
+            for (s in statements) {
+                if (s is Statement.State) states[s.name.lexeme] = s
+            }
+
+            // define globals first, in file order
+            for (s in statements) {
+                if (s is Statement.Global) defineGlobal(s)
+            }
+
+            // enter START
+            val start = states["START"]
+            if (start == null) {
+                System.err.println("Runtime error: no START state.")
+                return false
+            }
+            runStates(start)
+            return true
+        } catch (error: RuntimeError) {
+            reportRuntimeError(error)
+            return false
+        } finally {
+            // reset even after an error
+            environment = globals
+            currentState = null
+        }
+    }
+
+    // enter a state, run its body, follow each goto until END finishes
+    private fun runStates(start: Statement.State) {
+        var state = start
+        var args: List<Any?> = emptyList()
+
+        while (true) {
+            currentState = state.name
+
+            // new scope for every entry into a state, parameters filled in
+            val stateEnv = Environment(globals)
+            for ((i, param) in state.params.withIndex()) {
+                stateEnv.define(param.lexeme, args[i])
+            }
+
+            try {
+                executeBlock(state.body, stateEnv)
+            } catch (jump: GotoSignal) {
+                // goto: switch to the target state and loop again
+                state = jump.target
+                args = jump.arguments
+                continue
+            }
+
+            // only END may finish without a goto
+            if (state.name.lexeme == "END") return
+            throw RuntimeError(state.name, "State '${state.name.lexeme}' finished without a goto.")
+        }
+    }
+
+    // REPL: run one line, a bare expression prints its value
+    fun runRepl(statements: List<Statement>): Boolean {
+        try {
+            for (s in statements) {
+                if (s is Statement.Expression) {
+                    println(stringify(evaluate(s.expression)))
+                } else {
+                    execute(s)
+                }
+            }
+            return true
+        } catch (error: RuntimeError) {
+            reportRuntimeError(error)
+            return false
+        } finally {
+            // never stay inside a block after an error
+            environment = globals
+        }
+    }
+
+    private fun defineGlobal(stmt: Statement.Global) {
+        // same name twice in the global scope is an error
+        if (globals.isDefinedHere(stmt.name.lexeme)) {
+            throw RuntimeError(stmt.name, "Variable '${stmt.name.lexeme}' is already declared in this scope.")
+        }
+        val value = if (stmt.initializer != null) evaluate(stmt.initializer) else null
+        globals.define(stmt.name.lexeme, value)
+    }
+
+    // run statements in a new scope, then always go back to the old one
+    private fun executeBlock(statements: List<Statement>, blockEnv: Environment) {
+        val previous = environment
+        try {
+            environment = blockEnv
+            for (s in statements) execute(s)
+        } finally {
+            // runs even if a goto or an error cut the block short
+            environment = previous
+        }
+    }
+
+    private fun execute(stmt: Statement) {
+        when (stmt) {
+            // evaluate and throw the value away
+            is Statement.Expression -> evaluate(stmt.expression)
+
+            // evaluate and print
+            is Statement.Print -> println(stringify(evaluate(stmt.expression)))
+
+            // var creates a binding in the current scope, no initializer means nil
+            is Statement.Var -> {
+                if (environment.isDefinedHere(stmt.name.lexeme)) {
+                    throw RuntimeError(stmt.name, "Variable '${stmt.name.lexeme}' is already declared in this scope.")
+                }
+                val value = if (stmt.initializer != null) evaluate(stmt.initializer) else null
+                environment.define(stmt.name.lexeme, value)
+            }
+
+            // a block gets its own scope inside the current one
+            is Statement.Block -> executeBlock(stmt.statements, Environment(environment))
+
+            is Statement.If -> {
+                if (isTruthy(evaluate(stmt.condition))) {
+                    execute(stmt.thenBranch)
+                } else if (stmt.elseBranch != null) {
+                    execute(stmt.elseBranch)
+                }
+            }
+
+            is Statement.While -> {
+                while (isTruthy(evaluate(stmt.condition))) execute(stmt.body)
+            }
+
+            // a failed requires stops the program
+            is Statement.Requires -> {
+                if (!isTruthy(evaluate(stmt.condition))) {
+                    val where = currentState?.let { " in state '${it.lexeme}'" } ?: ""
+                    throw RuntimeError(stmt.keyword, "Requirement not met$where.")
+                }
+            }
+
+            // goto: find the target, check the arguments, then jump
+            is Statement.Goto -> {
+                if (currentState == null) {
+                    throw RuntimeError(stmt.keyword, "'goto' can only be used inside a state.")
+                }
+                val target = states[stmt.target.lexeme]
+                    ?: throw RuntimeError(stmt.target, "Undefined state '${stmt.target.lexeme}'.")
+                val args = stmt.arguments.map { evaluate(it) }
+                if (args.size != target.params.size) {
+                    throw RuntimeError(
+                        stmt.target,
+                        "State '${target.name.lexeme}' expects ${target.params.size} argument(s) but got ${args.size}."
+                    )
+                }
+                throw GotoSignal(target, args)
+            }
+
+            // globals are defined before START and states are entered through goto,
+            // so nothing to do when they show up inside a body
+            is Statement.Global -> {}
+            is Statement.State -> {}
+        }
+    }
+
     // helpers
 
     // falsey: nil, false, 0, ""   (everything else is truthy)
@@ -150,8 +331,8 @@ class Interpreter {
     private fun stringify(value: Any?): String {
         if (value == null) return "nil"
         if (value is Double) {
-            val isWhole = !value.isInfinite() && !value.isNaN() && value == Math.floor(value)
-            if (isWhole && Math.abs(value) < 1e15) return value.toLong().toString()
+            val isWhole = !value.isInfinite() && !value.isNaN() && value == floor(value)
+            if (isWhole && abs(value) < 1e15) return value.toLong().toString()
             return value.toString()
         }
         return value.toString()
