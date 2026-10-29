@@ -9,4 +9,4 @@ sealed class Expr {
     
 }
 
-data class Program(val expressions: List<Expr>) : Expr()
+data class Program(val expressions: List<Expr>)

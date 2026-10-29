@@ -6,6 +6,9 @@ class Environment(private val enclosing: Environment? = null) {
         values[name] = value
     }
 
+    // true if this scope itself already has the name (does not look outward)
+    fun isDefinedHere(name: String): Boolean = values.containsKey(name)
+
     // read a variable, searching outward through enclosing scopes
     fun get(name: Token): Any? {
         // found here
