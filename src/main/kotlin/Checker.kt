@@ -34,6 +34,7 @@ class Checker(private val statements: List<Statement>) {
     private fun checkState(state: Statement.State) {
         val isEnd = state.name.lexeme == "END"
         val gotos = mutableListOf<Statement.Goto>()
+        checkRequiresPlacement(state.body, isTopLevel = true)
         collectGotos(state.body, gotos)
 
         // END must not leave; every other state must have a goto
@@ -49,6 +50,37 @@ class Checker(private val statements: List<Statement>) {
             }
             if (target.params.size != g.arguments.size) {
                 report(g.target, "State '${target.name.lexeme}' expects ${target.params.size} argument(s) but got ${g.arguments.size}.")
+            }
+        }
+    }
+
+    private fun checkRequiresPlacement(statements: List<Statement>, isTopLevel: Boolean) {
+        var encounteredNonRequirement = false
+        for (statement in statements) {
+            when (statement) {
+                is Statement.Requires -> {
+                    if (!isTopLevel) {
+                        report(statement.keyword, "'requires' must appear directly in a state body.")
+                    } else if (encounteredNonRequirement) {
+                        report(statement.keyword, "'requires' must come before other state statements.")
+                    }
+                }
+                is Statement.Block -> {
+                    encounteredNonRequirement = true
+                    checkRequiresPlacement(statement.statements, isTopLevel = false)
+                }
+                is Statement.If -> {
+                    encounteredNonRequirement = true
+                    checkRequiresPlacement(listOf(statement.thenBranch), isTopLevel = false)
+                    if (statement.elseBranch != null) {
+                        checkRequiresPlacement(listOf(statement.elseBranch), isTopLevel = false)
+                    }
+                }
+                is Statement.While -> {
+                    encounteredNonRequirement = true
+                    checkRequiresPlacement(listOf(statement.body), isTopLevel = false)
+                }
+                else -> encounteredNonRequirement = true
             }
         }
     }

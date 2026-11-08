@@ -120,12 +120,10 @@ class StatementParser(tokens: List<Token>) : Parser(tokens) {
         return Statement.Goto(keyword, target, arguments)
     }
 
-    // requires( <condition> );
+    // requires <condition>;
     private fun requiresStatement(): Statement {
         val keyword = previous()
-        consume(TokenType.LEFT_PAREN, "Expect '(' after 'requires'.")
         val condition = expression()
-        consume(TokenType.RIGHT_PAREN, "Expect ')' after requires condition.")
         consume(TokenType.SEMICOLON, "Expect ';' after requires statement.")
         return Statement.Requires(keyword, condition)
     }
