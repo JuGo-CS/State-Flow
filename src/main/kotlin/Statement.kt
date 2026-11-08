@@ -6,6 +6,9 @@ sealed class Statement {
     data class If(val condition: Expr, val thenBranch: Statement, val elseBranch: Statement?) : Statement()
     data class While(val condition: Expr, val body: Statement) : Statement()
 
+    data class Function(val name: Token, val params: List<Token>, val body: List<Statement>) : Statement()
+    data class Return(val keyword: Token, val value: Expr?) : Statement()
+
     // global <name> = <expr>
     data class Global(val name: Token, val initializer: Expr?) : Statement()
 
