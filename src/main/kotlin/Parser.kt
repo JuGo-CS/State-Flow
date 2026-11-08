@@ -112,6 +112,15 @@ open class Parser(private val tokens: List<Token>) {
         throw error(peek(), "Expect expression.")
     }
 
+    private fun logicalOr(): Expr = TODO("Parse the logical-or precedence level.")
+
+    private fun logicalAnd(): Expr = TODO("Parse the logical-and precedence level.")
+
+    private fun call(): Expr = TODO("Parse a primary expression followed by call suffixes.")
+
+    private fun finishCall(callee: Expr): Expr.Call =
+        TODO("Parse call arguments and the closing parenthesis.")
+
     // helpers (protected so StatementParser can use them)
 
     protected fun peek(): Token = tokens[current]

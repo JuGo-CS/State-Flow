@@ -206,4 +206,10 @@ class StatementParser(tokens: List<Token>) : Parser(tokens) {
         return body
     }
 
+    private fun functionDeclaration(): Statement.Function =
+        TODO("Parse a function name, parameters, and body.")
+
+    private fun returnStatement(): Statement.Return =
+        TODO("Parse an optional return value and the terminating semicolon.")
+
 }

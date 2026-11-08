@@ -39,6 +39,8 @@ class Interpreter {
         is Expr.Binary -> evalBinary(expr)
         is Expr.Variable -> evalVariable(expr)
         is Expr.Assign -> evalAssign(expr)
+        is Expr.Logical -> evalLogical(expr)
+        is Expr.Call -> evalCall(expr)
     }
 
     // return immediately if literal
@@ -130,6 +132,15 @@ class Interpreter {
 
         return value
     }
+
+    private fun evalLogical(expr: Expr.Logical): Any? =
+        TODO("Evaluate logical operators with short-circuiting.")
+
+    private fun evalCall(expr: Expr.Call): Any? =
+        TODO("Evaluate the callee and arguments, check callability and arity, then call.")
+
+    private fun installNativeFunctions(): Unit =
+        TODO("Define at least two native callables in the global environment.")
 
     // run a whole program, false means a runtime error
     fun runProgram(statements: List<Statement>): Boolean {
@@ -264,6 +275,9 @@ class Interpreter {
                 while (isTruthy(evaluate(stmt.condition))) execute(stmt.body)
             }
 
+            is Statement.Function -> executeFunctionDeclaration(stmt)
+            is Statement.Return -> executeReturn(stmt)
+
             // a failed requires stops the program
             is Statement.Requires -> {
                 if (!isTruthy(evaluate(stmt.condition))) {
@@ -295,6 +309,12 @@ class Interpreter {
             is Statement.State -> {}
         }
     }
+
+    private fun executeFunctionDeclaration(stmt: Statement.Function): Unit =
+        TODO("Create a function value and bind it in the current environment.")
+
+    private fun executeReturn(stmt: Statement.Return): Unit =
+        TODO("Evaluate the return value and propagate it to the active function call.")
 
     // helpers
 
