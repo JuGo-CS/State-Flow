@@ -1,0 +1,8 @@
+state START {
+    var value = 1;
+    var value = 2; // expect runtime error: Variable 'value' is already declared in this scope.
+    goto END;
+}
+
+state END {
+}

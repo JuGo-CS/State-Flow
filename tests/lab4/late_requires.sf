@@ -1,0 +1,8 @@
+state START {
+    print "must not run";
+    requires true; // expect error: 'requires' must come before other state statements.
+    goto END;
+}
+
+state END {
+}

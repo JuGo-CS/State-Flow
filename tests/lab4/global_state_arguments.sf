@@ -1,0 +1,22 @@
+global visits = 0;
+
+state START {
+    var greeting = "hello";
+    visits = visits + 1;
+    goto GREETING(greeting);
+}
+
+state GREETING(name) {
+    requires name != nil;
+    print name;             // expect: hello
+    visits = visits + 1;
+    goto REPORT(visits);
+}
+
+state REPORT(total) {
+    print total;            // expect: 2
+    goto END;
+}
+
+state END {
+}

@@ -1,0 +1,6 @@
+state START(value) { // expect error: START cannot have parameters.
+    goto END;
+}
+
+state END {
+}

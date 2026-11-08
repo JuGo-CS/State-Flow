@@ -1,0 +1,8 @@
+state START {
+    var value;
+    print value; // expect: nil
+    goto END;
+}
+
+state END {
+}

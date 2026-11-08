@@ -1,0 +1,2 @@
+state END {
+} // expect error: Program must define a state named START.

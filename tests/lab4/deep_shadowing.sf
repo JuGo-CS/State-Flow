@@ -1,0 +1,16 @@
+state START {
+    var value = "state";
+    {
+        var value = "block";
+        {
+            var value = "inner";
+            print value;       // expect: inner
+        }
+        print value;         // expect: block
+    }
+    print value;           // expect: state
+    goto END;
+}
+
+state END {
+}

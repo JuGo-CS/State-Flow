@@ -1,0 +1,11 @@
+state START {
+    goto CHECK(nil);
+}
+
+state CHECK(value) {
+    requires value != nil;  // expect runtime error: Requirement not met in state 'CHECK'.
+    goto END;
+}
+
+state END {
+}
