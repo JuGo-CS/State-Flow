@@ -464,6 +464,7 @@ Finally, the language has evolved incrementally alongside the laboratory activit
 - `and` / `or` are reserved and scanned but are not wired into the expression grammar.
 - Function declarations, function calls (including `input()`), returns, and native functions are not implemented yet.
 - The REPL is line-oriented and does not accept file-level `global` or `state` declarations.
+- Lab 5 AST types and parser/interpreter hooks exist as scaffolding, but function declarations, function calls (including `input()`), returns, and logical operators are not usable in source programs yet.
 - Whole numbers of magnitude 10^15 or more, and very small fractions, print in Kotlin's scientific notation (`1.0E15`) instead of plain digits.
 - Leading-dot decimal literals (`.42`) are not recognized as one token.
 - Trailing-dot literals (`42.`) are not folded into the number.
@@ -480,3 +481,4 @@ Finally, the language has evolved incrementally alongside the laboratory activit
 | Lab 2 | Added the parser: a recursive-descent expression grammar (`assignment` -> `equality` -> `comparison` -> `term` -> `factor` -> `unary` -> `primary`) producing an `Expr` AST, plus `AstPrinter` for `--parse`'s prefix-parenthesized output. Every expression must be terminated by `;`. The REPL now prints parses instead of tokens. |
 | Lab 3 | Added the evaluator: `Interpreter` walks the `Expr` tree and computes values (numbers, strings, booleans, nil), `RuntimeError` reports failures with a line number (exit 70), and `Environment` holds variables. Added `--eval`, and the REPL now prints values. `+` concatenates when either side is a string. Truthiness, value printing, operator typing and division by zero are specified in Semantics. |
 | Lab 4 | Added statement parsing and execution, lexical block scopes, local and global variables, state parameters and transitions, `requires`, and static state-flow checks. Added annotated tests for scope, state flow, and errors. |
+| Lab 5 (scaffolding) | Added AST shapes and placeholder hooks for logical expressions, calls, function declarations, returns, the callable protocol, and return propagation. These placeholders are not wired into parsing or implemented yet. |
