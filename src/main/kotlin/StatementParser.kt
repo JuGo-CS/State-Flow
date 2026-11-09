@@ -90,9 +90,6 @@ class StatementParser(tokens: List<Token>) : Parser(tokens) {
     private fun statement(): Statement {
         if (match(TokenType.PRINT)) return printStatement()
         if (match(TokenType.LEFT_BRACE)) return Statement.Block(block())
-        if (match(TokenType.IF)) return ifStatement()
-        if (match(TokenType.WHILE)) return whileStatement()
-        if (match(TokenType.FOR)) return forStatement()
         if (match(TokenType.GOTO)) return gotoStatement()
         if (match(TokenType.REQUIRES)) return requiresStatement()
         return expressionStatement()
@@ -149,61 +146,6 @@ class StatementParser(tokens: List<Token>) : Parser(tokens) {
         }
         consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
         return statements
-    }
-
-    private fun ifStatement(): Statement {
-        consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.")
-        val condition = expression()
-        consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.")
-
-        val thenBranch = statement()
-        var elseBranch: Statement? = null
-        if (match(TokenType.ELSE)) {
-            elseBranch = statement()
-        }
-        return Statement.If(condition, thenBranch, elseBranch)
-    }
-
-    private fun whileStatement(): Statement {
-        consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.")
-        val condition = expression()
-        consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.")
-        val body = statement()
-        return Statement.While(condition, body)
-    }
-
-    // for (<init>; <condition>; <increment>) <body>
-    private fun forStatement(): Statement {
-        consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.")
-
-        val initializer: Statement? = when {
-            match(TokenType.SEMICOLON) -> null
-            match(TokenType.VAR) -> varDeclaration()
-            else -> expressionStatement()
-        }
-
-        var condition: Expr? = null
-        if (!check(TokenType.SEMICOLON)) {
-            condition = expression()
-        }
-        consume(TokenType.SEMICOLON, "Expect ';' after loop condition.")
-
-        var increment: Expr? = null
-        if (!check(TokenType.RIGHT_PAREN)) {
-            increment = expression()
-        }
-        consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.")
-
-        var body = statement()
-
-        if (increment != null) {
-            body = Statement.Block(listOf(body, Statement.Expression(increment)))
-        }
-        body = Statement.While(condition ?: Expr.Literal(true), body)
-        if (initializer != null) {
-            body = Statement.Block(listOf(initializer, body))
-        }
-        return body
     }
 
 }
