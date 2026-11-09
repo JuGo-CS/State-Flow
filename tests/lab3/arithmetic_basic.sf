@@ -1,0 +1,5 @@
+3 + 4;                                      // expect: 7
+10 - 4;                                     // expect: 6
+6 * 7;                                      // expect: 42
+8 / 2;                                      // expect: 4
+7 / 2;                                      // expect: 3.5

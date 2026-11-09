@@ -1,0 +1,4 @@
+-5;                                         // expect: -5
+--5;                                        // expect: 5
+-(2 + 3);                                   // expect: -5
+-(-3);                                      // expect: 3

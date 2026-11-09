@@ -15,7 +15,7 @@ StateFlow is a general-purpose programming language designed for programs that n
 - Host language: Kotlin
 - Version metadata: 2.0.20
 - Build: `./build.sh`
-- [Anything a fresh clone needs to know.]
+- Requires a JDK and Python 3 (the test harness is a Python script). Run `./build.sh` once before using `./run`.
 
 ## Running it
 
@@ -24,14 +24,33 @@ StateFlow is a general-purpose programming language designed for programs that n
 | `./run <file>` | [Executes a program. Available from Lab 4.] |
 | `./run --tokenize <file>` | Scans the source file and prints its token stream. Available from Lab 1. |
 | `./run --parse <file>` | Parses the file and prints one tree per `;`-terminated expression, in prefix parenthesized form. Available from Lab 2. |
-| `./run --eval <file>` | [Evaluates each expression and prints its value. Available from Lab 3.] |
-| `./run` | Starts the REPL: reads one line of input at a time and prints its parse (same output as `--parse`, applied per line). Each expression must end with `;`, e.g. `> 1 + 2;`. A syntax error prints its message and returns the prompt. |
+| `./run --eval <file>` | Parses the file, then evaluates each expression in order and prints its value, one per line. A lexical or syntax error rejects the whole file before anything runs (exit 65). A runtime error stops evaluation (exit 70). Available from Lab 3. |
+| `./run` | Starts the REPL: reads one line of input at a time, evaluates it and prints each expression's value (same output as `--eval`, applied per line). Each expression must end with `;`, e.g. `1 + 2;`. A syntax or runtime error prints its message and returns the prompt. Variables persist across lines. |
+
+Any other combination of arguments prints a usage line to stderr and exits with code 64.
 
 ## Exit codes
-- 0 - A successful scan (or parse) exits with code 0.
+- 0 - A successful scan, parse, or evaluation exits with code 0.
+- 64 - Incorrect command-line usage, such as an unknown flag or the wrong number of arguments.
 - 65 - The file was read successfully, but the scanner found invalid or malformed input, or the parser found a syntax error.
 - 66 - The program could not read the file, such as when the file does not exist or cannot be opened.
-- 70 - The scanner started successfully but encountered an unexpected internal failure while processing the file. This will only be used starting in Lab 3.
+- 70 - The file scanned and parsed successfully, but evaluation failed with a runtime error (for example, `-"hi"` or `1 / 0`). Used starting in Lab 3.
+
+Runtime errors are reported after evaluation has started, in this format:
+
+```
+[line 2] Runtime error: Operand must be a number.
+```
+
+The line is the line of the operator (or variable name) that failed. The messages are:
+
+- `Operand must be a number.` (unary `-`)
+- `Operands must be numbers.` (`-`, `*`, `/`, `<`, `<=`, `>`, `>=`)
+- `Operands must be two numbers or at least one string.` (`+`)
+- `Division by zero.`
+- `Undefined variable 'x'.`
+
+Static errors (lexical, syntax) reject the whole file before anything runs, with empty stdout. A runtime error is different: values printed by earlier expressions stay printed, evaluation stops at the failing expression, and the exit code is 70. In the REPL a runtime error prints its message and returns the prompt.
 
 ## File extension
 
@@ -46,8 +65,7 @@ The following words are reserved and cannot be used as identifiers.
 | :--- | :--- |
 | **state** | Declares a program state. |
 | **goto** | Transitions execution to another state. |
-| **requires** | Defines a condition that must be satisfied before entering a state. |
-| input | Receives input from the user. |
+| **requires** | Declares a condition that must hold when a state is entered; if it does not, the program stops with a runtime error. |
 | **var** | Declares a variable. |
 | **global** | Declares a variable as used in multiple states. |
 | **fun** | Declares a function. |
@@ -64,7 +82,7 @@ The following words are reserved and cannot be used as identifiers.
 | **and** | Logical AND operator. |
 | **or** | Logical OR operator. |
 
-> **Current Scope note:** this table lists the full language's reserved words. **Lab 2's grammar (below) covers only expressions** -- literals, variables, unary/binary operators, grouping, and assignment. Statement-level constructs (`var`, `print`, `if`, `while`, `for`, `state`, `goto`, `requires`, `global`) are scanned as keywords, and their AST node definitions exist in `Statement.kt`, but the parser does not parse them yet. See Known limitations. See Known limitations.
+> **Current Scope note:** this table lists the full language's reserved words. **Lab 2's grammar (below) covers only expressions** -- literals, variables, unary/binary operators, grouping, and assignment. Statement-level constructs (`var`, `print`, `if`, `while`, `for`, `state`, `goto`, `requires`, `global`) are scanned as keywords, and their AST node definitions exist in `Statement.kt`, but the parser does not parse them yet. See Known limitations.
 
 ### Operators
 
@@ -92,8 +110,8 @@ Precedence numbers follow the grammar below: level 0 (`assignment`) is the loose
 |---|---|---|
 | Number | `42`, `3.14` | A numeric literal (double-precision). No leading-dot decimals (`.42` scans as DOT then NUMBER), no trailing-dot folding (`42.` scans as NUMBER then DOT), no underscore separators, and no unary-minus folding (`-5` scans as MINUS then NUMBER). |
 | String | `"hello"` | A string literal. Supports `\n`, `\t`, `\\`, `\"` escapes and legal multi-line strings. An unrecognized escape sequence is a lexical error. Empty string `""` is legal. |
-| [boolean] | `true`, `false` | A boolean literal |
-| [nil] | `nil` | A nil value |
+| Boolean | `true`, `false` | A boolean literal |
+| Nil | `nil` | A nil value |
 
 
 ### Identifiers
@@ -193,26 +211,50 @@ require declared types. The runtime supports the following value kinds:
 - **Nil** — represents the absence of a value and is represented as Kotlin
   `null`.
 
+At runtime every value is held as a Kotlin `Any?` that is a `Double`, a
+`String`, a `Boolean` or `null`. The evaluator finds out which one it has with
+runtime checks (`isDouble`, `isString`, and so on), which is what lets `+`
+choose between addition and concatenation.
+
 ### Value printing
 
-- **Numbers:** [e.g. 5 rather than 5.0]
+- **Numbers:** a whole number prints without a decimal point (`5`, not `5.0`; `-3`, not `-3.0`). Any other number prints its shortest decimal form (`2.5`). Numbers of magnitude 10^15 or more, and very small fractions, fall back to Kotlin's scientific form (e.g. `1.0E15`). This differs from `--parse`, which prints number literals as `2.0` (see Parse output format).
 - **Nil:** printed as `nil`.
 - **Strings:** printed as their contents without surrounding quotation marks.
 - **Booleans:** printed as `true` or `false`.
 
 ### Truthiness
 
-[The complete rule. Which values are false in a condition; everything else is
-true.]
+The values `nil`, `false`, the number `0` and the empty string `""` are false
+in a condition. Every other value is true, including `-1`, `"0"`, `" "` and
+`"false"`. The `!` operator applies this rule and always returns a boolean:
+`!0` is `true` and `!"a"` is `false`. The same rule will be used by `if`,
+`while` and the logical operators once they are parsed. Equality does not use
+truthiness: `0 == false` is `false`.
 
 ### Operator semantics
 
-- **Arithmetic:** [accepted operand types]
-- **`+` on strings:** [concatenation, error, or coercion]
-- **Mixed types:** [what happens]
-- **Comparison:** [accepted operand types]
-- **Equality across types:** [false, or an error]
-- **Division by zero:** [value produced, or runtime error]
+- **Arithmetic:** `-`, `*`, `/` and unary `-` accept numbers only. Any other
+  operand type is a runtime error.
+- **`+` on strings:** `+` is the language's one overloaded operator. If either
+  operand is a string, the result is concatenation, and the other operand is
+  converted to text with the value-printing rules above: `"n: " + 5` is
+  `n: 5` and `"a" + nil` is `anil`. If both operands are numbers it adds.
+- **Mixed types:** `+` on any other combination (e.g. `1 + true`, `nil + nil`)
+  is a runtime error, and so is any mix of types for `-`, `*`, `/` and the
+  comparisons. Only `+` converts. `+` is left-associative, so `1 + 2 + "a"`
+  is `3a` while `"a" + 1 + 2` is `a12`.
+- **Comparison:** `<`, `<=`, `>` and `>=` accept numbers only. Comparing
+  strings is a runtime error.
+- **Equality across types:** `==` and `!=` never fail. Values of different
+  types are never equal (`1 == "1"` and `0 == false` are both `false`);
+  `nil == nil` is `true`. No conversion happens.
+- **Division by zero:** a runtime error, `Division by zero.` It is not
+  `Infinity`, so a bad calculation stops the program.
+- **Evaluation order:** left to right. Both operands of a binary operator are
+  evaluated, the left one first, before the operator is applied.
+- **Assignment:** `a = b = 3;` assigns `3` to `b`, then to `a`, and produces
+  `3`. The right side is evaluated before the assignment happens.
 
 ### Scope and bindings
 
@@ -231,7 +273,9 @@ explicitly declared global variables.
 - **Redeclaration in the same scope:** [allowed or an error]
 - **Uninitialized variable holds:** [value]
 - **Shadowing:** [behavior]
-- **Undefined name:** [static error with exit 65, or runtime error with exit 70]
+- **Undefined name:** a runtime error with exit 70, `Undefined variable 'x'.`
+  This applies to reading a name that was never declared and to assigning to
+  one (`x = 5;` does not create `x`; variables are declared with `var`).
 
 The distinction between parameters and globals is intentional. Parameters are
 used when a value is specific to a state transition and should be passed
@@ -242,13 +286,28 @@ implicitly accessible everywhere.
 
 ### Control flow and functions
 
+The state rules below describe the language design. They will be implemented from
+Lab 4 and Lab 5 onward; the parser does not accept `state`, `goto` or
+`requires` yet.
+
 - **State entry:** Executable programs must contain a `START` state as their
   entry point and an `END` state as their termination state. Every state except
   `END` must explicitly specify a transition using `goto`.
 - **State transitions:** A `goto` must reference an existing state. State
-  parameters may receive values explicitly supplied by the transition.
-- **State requirements:** A `requires` condition defines a condition that must
-  be satisfied before entering the associated state.
+  parameters may receive values explicitly supplied by the transition, as in
+  `goto MENU(5);` for `state MENU(myVar) { ... }`. Arguments are evaluated left
+  to right, in the calling state, before the transition happens. A wrong number
+  of arguments is a static error (exit 65). `START` takes no parameters. A
+  `goto` never returns a value and cannot appear inside an expression, which
+  is what keeps a state different from a function. Transitions are run in a
+  loop rather than by recursive calls, so a long-running flow cannot overflow
+  the stack.
+- **State requirements:** `requires <expr>;`  states a condition
+  that must hold when a state is entered. It may appear only at the top of a
+  state body and is checked in order, with the state's parameters in scope. A
+  failed requirement is a runtime error (exit 70) that names the state. It is
+  for catching bad arguments or invalid program state, not for choosing
+  between branches; use `if` for that. It uses the truthiness rule above.
 - **Logical operators return:** [booleans, or the operand]
 - **Dangling else binds to:** [which if]
 - **Closure capture of a loop variable:** [per iteration, or shared]
@@ -285,10 +344,11 @@ The first is a scanner (lexical) error. The second and third are parser (syntax)
 
 | Failure | Exit code |
 |---|---|
+| Bad command-line usage | 64 |
 | Lexical error | 65 |
 | Syntax error | 65 |
 | File read error | 66 |
-| Runtime error | 70 (not yet reachable -- Lab 3) |
+| Runtime error | 70 |
 
 ## Testing conventions
 
@@ -302,6 +362,8 @@ The first is a scanner (lexical) error. The second and third are parser (syntax)
 
 `tests/lab2/` covers every literal kind, the `term` level (including left-associativity, `1 - 2 - 3`), the `factor` level (including precedence over `term`, `2 + 3 * 4`), comparison, equality (including a comparison nested inside an equality), unary (including double negation, `!!true`), simple and nested grouping, one expression exercising the full six-level chain, and syntax-error cases (unclosed paren, dangling operator, missing `;`) asserting exit 65 with empty stdout. Every expression in every `tests/lab2/*.sf` file ends with `;`.
 
+`tests/lab3/` uses inline annotations: each expression ends with `;` followed by `// expect: <value>`, so the source and its expected output sit together. It covers literals, arithmetic and precedence, whole-number printing, string concatenation and coercion (including left-to-right `1 + 2 + "a"` versus `"a" + 1 + 2`), comparison, equality across types, truthiness through `!`, unary negation, output printed before a runtime error, one runtime-error case per message (exit 70), and a syntax error in a file that also holds a valid expression, to show that nothing runs (exit 65). Expected values were worked out by hand from the rules in Semantics, not copied from the interpreter's output.
+
 Run locally with:
 
 ```bash
@@ -310,6 +372,7 @@ curl -sSL https://raw.githubusercontent.com/WhiteLicorice/cmsc-124-harness/v1.1/
 python3 run_tests.py tests/lab0
 python3 run_tests.py tests/lab1
 python3 run_tests.py tests/lab2
+python3 run_tests.py tests/lab3
 ```
 
 ## Sample code
@@ -321,7 +384,7 @@ state START {
 }
 
 state GREETING(name) {
-  requires(name != nil);
+  requires name != nil;
 
   print "Hello, " + name;
   goto END;
@@ -332,10 +395,9 @@ state END {
 ```
 
 ```
-Output:
+Output (when the user types Leona):
 
-
-[its output]
+Hello, Leona
 ```
 
 > **Note:** this sample describes the target language design but goes well beyond Lab 2's actual scope, and doesn't fully parse yet even with the ahead-of-schedule statement work -- `input()` needs function-call syntax, which isn't implemented. A Lab-2-accurate sample is a semicolon-terminated expression, e.g. `(1 + 2) * 3 == 9;` -> `(== (* (group (+ 1.0 2.0)) 3.0) 9.0)`.
@@ -346,7 +408,7 @@ StateFlow was designed around the idea that some programs naturally move through
 
 We chose a readable syntax inspired by languages such as Python while retaining semicolon-terminated statements and braces for blocks. The goal was to make the language approachable without removing clear boundaries between statements and blocks. Semicolons also provide an unambiguous way to separate expressions when parsing a file, rather than making newlines determine where an expression ends.
 
-State transitions were designed to use `goto` rather than requiring programmers to represent every stage using nested conditionals. A transition explicitly identifies the next state, making the control-flow structure visible in the source code. We also introduced `requires` as a condition associated with entering a state. This separates the condition for entering a state from the actions performed inside that state, which fits the language's focus on state-based execution.
+State transitions were designed to use `goto` rather than requiring programmers to represent every stage using nested conditionals. A transition explicitly identifies the next state, making the control-flow structure visible in the source code. We also introduced `requires` as a condition associated with entering a state. This separates the condition for entering a state from the actions performed inside that state, which fits the language's focus on state-based execution. A failed requirement is a runtime error rather than a silent skip or a fallback transition, because `requires` is meant to catch bad arguments or invalid program state, not to choose between branches; that is what `if` is for.
 
 A major design decision concerns how data is accessed between states. We considered omitting state parameters and relying on shared variables instead. This would make state declarations and transitions shorter, but it would also make dependencies between states less explicit. A state could use a value without showing where that value came from, and it could become difficult to determine which state owns or modifies a variable. We therefore decided to keep state parameters so that state-specific values can be passed explicitly during a transition. For example, `goto GREETING(name);` makes it clear that `GREETING` receives `name` from the preceding state.
 
@@ -360,6 +422,8 @@ The expression grammar uses separate precedence levels for equality, comparison,
 
 Assignment is represented as its own expression form in the AST (`Expr.Assign`), parsed by an `assignment` rule that sits above `equality`. A variable expression represents reading the value associated with a name, while an assignment represents writing a value to that name. Keeping these concepts distinct prevents the left side of an assignment from being treated simply as another expression to evaluate. Assignment also produces the value that was assigned, allowing it to participate in larger expressions.
 
+`+` is deliberately the only overloaded operator. Allowing `"n: " + 5` makes building output text convenient, while keeping `-`, `*`, `/` and the comparisons strict means a type mistake in arithmetic still fails loudly instead of silently producing a surprising value. Equality never converts either: `1 == "1"` is simply `false`. Truthiness follows Python's convention (`nil`, `false`, `0` and `""` are false) so conditions on counters and strings read naturally. Division by zero is a runtime error rather than `Infinity`, so a bad calculation stops the program. Operands are evaluated left to right so that the order of side effects matches the order of the source text.
+
 We included common programming constructs such as `var`, `if`, `else`, `while`, `for`, `fun`, `return`, `print`, and `input` because StateFlow is intended to be a general-purpose language rather than a language limited to state transitions. States provide the higher-level structure of a program, while these constructs provide the ordinary computation and interaction needed within those states. Logical operators such as `and` and `or` were also reserved as part of the intended language design, although they are not yet included in the Lab 2 expression grammar.
 
 Some features were deliberately kept out of the current Lab 2 grammar. The Lab 2 grammar focuses only on expressions, covering literals, variables, grouping, unary operators, arithmetic, comparison, equality, and assignment. Statement-level constructs are scanned as keywords and have AST node definitions, but the parser does not handle them yet. This keeps the documented grammar identical to what the parser accepts.
@@ -370,7 +434,7 @@ The language currently uses `//` for line comments and does not support block co
 
 The implementation is written in Kotlin, while StateFlow itself remains independent of the implementation language. Kotlin was chosen as the host language for the compiler/interpreter implementation, while the language design focuses on the syntax and semantics experienced by StateFlow programmers.
 
-Finally, the language has evolved incrementally alongside the laboratory activities. Lab 1 established the scanner and lexical structure, while Lab 2 introduced the recursive-descent expression parser and AST. Statement-level and state-related features are part of the intended language but are not parsed yet. The design therefore distinguishes between the current implementation and the eventual target language, and the Grammar section only ever describes the former.
+Finally, the language has evolved incrementally alongside the laboratory activities. Lab 1 established the scanner and lexical structure, while Lab 2 introduced the recursive-descent expression parser and AST, and Lab 3 added the evaluator. Statement-level and state-related features are part of the intended language but are not parsed yet. The design therefore distinguishes between the current implementation and the eventual target language, and the Grammar section only ever describes the former.
 
 
 ## Known limitations
@@ -378,8 +442,10 @@ Finally, the language has evolved incrementally alongside the laboratory activit
 - Lab 2's grammar (documented above) covers expressions only. Statement-level constructs (`var`, `print`, `if`, `state`, `goto`, ...) are scanned but not parsed yet.
 - Every expression in a file, including the last, must end with `;` -- there's no bare "one expression per line" mode, and the REPL needs the `;` too.
 - `and` / `or` are reserved and scanned, but not wired into the expression grammar -- no logical-expression precedence level exists above `equality`.
-- Function-call syntax (`input()`, etc.) doesn't exist yet, so the Sample code above doesn't fully parse.
-- `--eval` and `./run <file>` are not implemented yet (Lab 3 and Lab 4 respectively).
+- Function-call syntax (`input()`, etc.), `var` and state declarations are not implemented yet, so the Sample code above can't run.
+- `./run <file>` is not implemented yet (Lab 4).
+- `var` declarations are not parsed yet, so no variable can exist. Until Lab 4, every variable read or assignment is a runtime error (`Undefined variable 'x'.`).
+- Whole numbers of magnitude 10^15 or more, and very small fractions, print in Kotlin's scientific notation (`1.0E15`) instead of plain digits.
 - Leading-dot decimal literals (`.42`) are not recognized as one token.
 - Trailing-dot literals (`42.`) are not folded into the number.
 - Underscore digit separators (`4_200`) are not supported.
@@ -393,3 +459,4 @@ Finally, the language has evolved incrementally alongside the laboratory activit
 |---|---|
 | Lab 1 | Added the scanner and defined the lexical structure of StateFlow, including keywords, identifiers, literals, operators, punctuation, whitespace, comments, and lexical error handling. Established `START` as the required entry state and `END` as the required termination state. |
 | Lab 2 | Added the parser: a recursive-descent expression grammar (`assignment` -> `equality` -> `comparison` -> `term` -> `factor` -> `unary` -> `primary`) producing an `Expr` AST, plus `AstPrinter` for `--parse`'s prefix-parenthesized output. Every expression must be terminated by `;`. The REPL now prints parses instead of tokens. |
+| Lab 3 | Added the evaluator: `Interpreter` walks the `Expr` tree and computes values (numbers, strings, booleans, nil), `RuntimeError` reports failures with a line number (exit 70), and `Environment` holds variables. Added `--eval`, and the REPL now prints values. `+` concatenates when either side is a string. Truthiness, value printing, operator typing and division by zero are specified in Semantics. |

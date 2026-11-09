@@ -1,0 +1,10 @@
+1 == 1;                                     // expect: true
+1 == 2;                                     // expect: false
+1 != 2;                                     // expect: true
+"a" == "a";                                 // expect: true
+"a" == "b";                                 // expect: false
+"a" != "b";                                 // expect: true
+true == true;                               // expect: true
+true == false;                              // expect: false
+nil == nil;                                 // expect: true
+1 + 1 == 2;                                 // expect: true
