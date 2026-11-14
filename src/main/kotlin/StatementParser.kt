@@ -90,9 +90,6 @@ class StatementParser(tokens: List<Token>) : Parser(tokens) {
     private fun statement(): Statement {
         if (match(TokenType.PRINT)) return printStatement()
         if (match(TokenType.LEFT_BRACE)) return Statement.Block(block())
-        if (match(TokenType.IF)) return ifStatement()
-        if (match(TokenType.WHILE)) return whileStatement()
-        if (match(TokenType.FOR)) return forStatement()
         if (match(TokenType.GOTO)) return gotoStatement()
         if (match(TokenType.REQUIRES)) return requiresStatement()
         return expressionStatement()
