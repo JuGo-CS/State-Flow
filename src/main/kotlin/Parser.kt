@@ -23,7 +23,7 @@ open class Parser(private val tokens: List<Token>) {
     protected fun expression(): Expr = assignment()
 
     private fun assignment(): Expr {
-        val expr = equality()
+        val expr = logicalOr()
 
         if (match(TokenType.EQUAL)) {
             val equals = previous()
@@ -34,6 +34,26 @@ open class Parser(private val tokens: List<Token>) {
             error(equals, "Invalid assignment target.")   // reported, not thrown
         }
 
+        return expr
+    }
+
+    private fun logicalOr(): Expr {
+        var expr = logicalAnd()
+        while (match(TokenType.OR)) {
+            val operator = previous()
+            val right = logicalAnd()
+            expr = Expr.Logical(expr, operator, right)
+        }
+        return expr
+    }
+
+    private fun logicalAnd(): Expr {
+        var expr = equality()
+        while (match(TokenType.AND)) {
+            val operator = previous()
+            val right = equality()
+            expr = Expr.Logical(expr, operator, right)
+        }
         return expr
     }
 
@@ -111,15 +131,6 @@ open class Parser(private val tokens: List<Token>) {
 
         throw error(peek(), "Expect expression.")
     }
-
-    private fun logicalOr(): Expr = TODO("Parse the logical-or precedence level.")
-
-    private fun logicalAnd(): Expr = TODO("Parse the logical-and precedence level.")
-
-    private fun call(): Expr = TODO("Parse a primary expression followed by call suffixes.")
-
-    private fun finishCall(callee: Expr): Expr.Call =
-        TODO("Parse call arguments and the closing parenthesis.")
 
     // helpers (protected so StatementParser can use them)
 
