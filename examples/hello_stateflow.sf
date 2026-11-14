@@ -1,0 +1,15 @@
+global greeting = "Hello, ";
+
+state START {
+    var recipient = "StateFlow";
+    goto GREETING(recipient);
+}
+
+state GREETING(name) {
+    requires name != nil;
+    print greeting + name + "!";
+    goto END;
+}
+
+state END {
+}
