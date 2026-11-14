@@ -1,0 +1,24 @@
+global title = "Workflow countdown";
+
+state START {
+    print title;
+    goto COUNTDOWN(3);
+}
+
+state COUNTDOWN(remaining) {
+    requires remaining >= 0;
+    while (remaining > 0) {
+        print remaining;
+        remaining = remaining - 1;
+    }
+
+    if (remaining == 0 and true) {
+        print "Complete";
+    } else {
+        print "Unexpected value";
+    }
+    goto END;
+}
+
+state END {
+}

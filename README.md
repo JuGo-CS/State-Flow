@@ -8,7 +8,7 @@
 
 ## Overview
 
-StateFlow is an imperative, dynamically typed language designed for programs that naturally operate through different stages or states. Its main idea is to make the current execution state of a program and the transitions between states explicit through `state` and `goto` constructs. The Lab 4 implementation supports variables, scoped blocks, state parameters, requirements, and output. Variables and state arguments do not require declared types. StateFlow is intended for programs such as transaction workflows, menu-driven programs, and other programs where execution naturally moves between different stages.
+StateFlow is an imperative, dynamically typed language designed for programs that naturally operate through different stages or states. Its main idea is to make the current execution state of a program and the transitions between states explicit through `state` and `goto` constructs. The current implementation supports variables, scoped blocks, state parameters, requirements, conditionals, loops, short-circuit logical operators, and output. Variables and state arguments do not require declared types. StateFlow is intended for programs such as transaction workflows, menu-driven programs, and other programs where execution naturally moves between different stages.
 
 ## Host language and build
 
@@ -21,7 +21,7 @@ StateFlow is an imperative, dynamically typed language designed for programs tha
 
 | Command | What it does |
 |---|---|
-| `./run <file>` | [Executes a program. Available from Lab 4.] |
+| `./run <file>` | Executes a state-flow program with statements and control flow. |
 | `./run --tokenize <file>` | Scans the source file and prints its token stream. Available from Lab 1. |
 | `./run --parse <file>` | Parses the file and prints one tree per `;`-terminated expression, in prefix parenthesized form. Available from Lab 2. |
 | `./run --eval <file>` | Parses the file, then evaluates each expression in order and prints its value, one per line. A lexical or syntax error rejects the whole file before anything runs (exit 65). A runtime error stops evaluation (exit 70). Available from Lab 3. |
@@ -32,7 +32,7 @@ Any other combination of arguments prints a usage line to stderr and exits with 
 ## Exit codes
 - 0 - A successful scan, parse, or evaluation exits with code 0.
 - 64 - Incorrect command-line usage, such as an unknown flag or the wrong number of arguments.
-- 65 - The file was read successfully, but scanning, parsing, or Lab 4 state-flow checking found an error. Rejected programs do not execute.
+- 65 - The file was read successfully, but scanning, parsing, or static state-flow checking found an error. Rejected programs do not execute.
 - 66 - The program could not read the file, such as when the file does not exist or cannot be opened.
 - 70 - The file scanned and parsed successfully, but evaluation failed with a runtime error (for example, `-"hi"` or `1 / 0`). Used starting in Lab 3.
 
@@ -68,41 +68,43 @@ The following words are reserved and cannot be used as identifiers.
 | **requires** | Declares a condition that must hold when a state is entered; if it does not, the program stops with a runtime error. |
 | **var** | Declares a variable. |
 | **global** | Declares a variable as used in multiple states. |
-| **fun** | Reserved for function declarations; not implemented in the Lab 4 parser. |
-| **if** | Reserved for a conditional statement; not implemented in the Lab 4 parser. |
-| **else** | Reserved for a conditional statement; not implemented in the Lab 4 parser. |
-| **while** | Reserved for a loop statement; not implemented in the Lab 4 parser. |
-| **for** | Reserved for a loop statement; not implemented in the Lab 4 parser. |
-| **return** | Reserved for function returns; not implemented in the Lab 4 parser. |
+| **fun** | Reserved for function declarations; functions are outside the approved state-focused Lab 5 scope. |
+| **if** | Executes a statement when its condition is truthy. |
+| **else** | Selects the alternative branch of an `if`. |
+| **while** | Repeats a statement while its condition is truthy. |
+| **for** | Runs an initializer, condition, increment, and loop body. |
+| **return** | Reserved for function returns; function support is not implemented. |
 | **print** | Outputs a value. |
-| **input** | Reserved for a future input operation; not implemented in the Lab 4 parser. |
+| **input** | Reserved for a future input operation; not implemented. |
 | **true** | Boolean literal representing true. |
 | **false** | Boolean literal representing false. |
 | **nil** | Represents the absence of a value. |
-| **and** | Reserved for a logical AND operator; not implemented in the expression grammar. |
-| **or** | Reserved for a logical OR operator; not implemented in the expression grammar. |
+| **and** | Short-circuit logical AND. |
+| **or** | Short-circuit logical OR. |
 
-> The scanner recognizes the full keyword set. The normal file runner currently parses and executes the Lab 4 statement and state syntax documented below. `and`, `or`, `fun`, `return`, and `input` are reserved for later features but are not implemented yet.
+> The scanner recognizes the full keyword set. The instructor-approved Lab 5 scope focuses on state-based control flow rather than user-defined functions: `fun`, `return`, and `input` remain reserved but are not implemented.
 
 ### Operators
 
 | Operator | Category | Operands | Associativity | Precedence |
 |---|---|---|---|---|
-| `!` | logical | unary | right | 5 (tightest, with grouping/literals) |
-| `-` | arithmetic | unary (negation) | right | 5 |
-| `*` | arithmetic | binary | left | 4 |
-| `/` | arithmetic | binary | left | 4 |
-| `+` | arithmetic | binary | left | 3 |
-| `-` | arithmetic | binary | left | 3 |
-| `>` | comparison | binary | left | 2 |
-| `>=` | comparison | binary | left | 2 |
-| `<` | comparison | binary | left | 2 |
-| `<=` | comparison | binary | left | 2 |
-| `!=` | equality | binary | left | 1 (loosest) |
-| `==` | equality | binary | left | 1 (loosest) |
-| `=` | assignment | binary | right | 0 (below equality, loosest of all) |
+| `!` | logical | unary | right | 7 (tightest, with grouping/literals) |
+| `-` | arithmetic | unary (negation) | right | 7 |
+| `*` | arithmetic | binary | left | 6 |
+| `/` | arithmetic | binary | left | 6 |
+| `+` | arithmetic | binary | left | 5 |
+| `-` | arithmetic | binary | left | 5 |
+| `>` | comparison | binary | left | 4 |
+| `>=` | comparison | binary | left | 4 |
+| `<` | comparison | binary | left | 4 |
+| `<=` | comparison | binary | left | 4 |
+| `!=` | equality | binary | left | 3 |
+| `==` | equality | binary | left | 3 |
+| `and` | logical | binary | left | 2 |
+| `or` | logical | binary | left | 1 |
+| `=` | assignment | binary | right | 0 (loosest) |
 
-Precedence numbers follow the grammar below: level 0 (`assignment`) is the loosest, level 1 (`equality`) comes next, and level 5 (`unary`) is evaluated first/tightest, matching the convention "lower number = looser."
+Precedence numbers follow the grammar below: level 0 (`assignment`) is the loosest, then `or`, `and`, equality, comparison, arithmetic, and unary. Lower numbers are looser.
 
 ### Literals
 
@@ -167,14 +169,21 @@ parameters -> IDENTIFIER ( "," IDENTIFIER )*
 stateItem  -> varDecl | statement
 varDecl    -> "var" IDENTIFIER ( "=" expression )? ";"
 statement  -> printStmt | expressionStmt | block | gotoStmt | requiresStmt
+           | ifStmt | whileStmt | forStmt
 printStmt  -> "print" expression ";"
 expressionStmt -> expression ";"
 block      -> "{" stateItem* "}"
 gotoStmt   -> "goto" IDENTIFIER ( "(" arguments? ")" )? ";"
 arguments  -> expression ( "," expression )*
 requiresStmt -> "requires" expression ";"
+ifStmt     -> "if" "(" expression ")" statement ( "else" statement )?
+whileStmt  -> "while" "(" expression ")" statement
+forStmt    -> "for" "(" ( varDecl | expressionStmt | ";" )
+              expression? ";" expression? ")" statement
 expression -> assignment
-assignment -> IDENTIFIER "=" assignment | equality
+assignment -> IDENTIFIER "=" assignment | logicOr
+logicOr    -> logicAnd ( "or" logicAnd )*
+logicAnd   -> equality ( "and" equality )*
 equality   -> comparison ( ( "!=" | "==" ) comparison )*
 comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )*
 term       -> factor ( ( "-" | "+" ) factor )*
@@ -183,9 +192,9 @@ unary      -> ( "!" | "-" ) unary | primary
 primary    -> NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil" | "(" expression ")"
 ```
 
-The normal `./run <file>` path accepts top-level `global` and `state` declarations. A state body accepts local `var` declarations and the statements shown in the grammar. `requires` must appear directly at the beginning of a state body, before other statements. The checker requires exactly one `START` and `END`, checks state transitions and their argument counts, and rejects `goto` in `END`.
+The normal `./run <file>` path accepts top-level `global` and `state` declarations. A state body accepts local `var` declarations and the statements shown in the grammar. `for` is desugared to a scoped block and `while` loop. `requires` must appear directly at the beginning of a state body, before other statements. The checker requires exactly one `START` and `END`, checks state transitions and their argument counts, and rejects `goto` in `END`.
 
-`./run --parse` and `./run --eval` retain the earlier expression-only grammar: each expression is terminated by `;`. The `assignment` rule is right-recursive, so `a = b = c` means `a = (b = c)`. The left side of `=` must be a plain identifier; otherwise parsing reports `Invalid assignment target.` The `and` and `or` keywords are not part of the expression grammar yet. The REPL accepts local `var` declarations and supported statements/expressions, but not file-level `global` or `state` declarations.
+`./run --parse` and `./run --eval` use the same expression grammar: each expression is terminated by `;`. The `assignment` rule is right-recursive, so `a = b = c` means `a = (b = c)`. The left side of `=` must be a plain identifier; otherwise parsing reports `Invalid assignment target.` `and` binds more tightly than `or`. The REPL accepts local `var` declarations and supported statements/expressions, but not file-level `global` or `state` declarations.
 
 ## Parse output format
 
@@ -240,8 +249,9 @@ choose between addition and concatenation.
 The values `nil`, `false`, the number `0` and the empty string `""` are false
 in a condition. Every other value is true, including `-1`, `"0"`, `" "` and
 `"false"`. The `!` operator applies this rule and always returns a boolean:
-`!0` is `true` and `!"a"` is `false`. The same rule is used by `if` and `while`. Equality does not use
-truthiness: `0 == false` is `false`.
+`!0` is `true` and `!"a"` is `false`. The same rule is used by `if`, `while`,
+`for`, and logical operators. Equality does not use truthiness: `0 == false`
+is `false`.
 
 ### Operator semantics
 
@@ -262,8 +272,14 @@ truthiness: `0 == false` is `false`.
   `nil == nil` is `true`. No conversion happens.
 - **Division by zero:** a runtime error, `Division by zero.` It is not
   `Infinity`, so a bad calculation stops the program.
-- **Evaluation order:** left to right. Both operands of a binary operator are
-  evaluated, the left one first, before the operator is applied.
+- **Logical operators:** `and` evaluates its right operand only when the left
+  operand is truthy; `or` evaluates it only when the left operand is falsey.
+  Both return one of their operands: `and` returns the falsey left operand or
+  the right operand, while `or` returns the truthy left operand or the right
+  operand. This makes them short-circuiting and allows expressions such as
+  `false and (1 / 0)` without evaluating the division.
+- **Evaluation order:** operands are evaluated left to right. Non-logical
+  binary operators evaluate both operands before applying the operator.
 - **Assignment:** `a = b = 3;` assigns `3` to `b`, then to `a`, and produces
   `3`. The right side is evaluated before the assignment happens.
 
@@ -327,7 +343,7 @@ reclamation is managed by the host runtime. StateFlow specifies when bindings
 are visible, not the exact time at which their host-language storage is
 reclaimed.
 
-### State flow and functions
+### State flow and control flow
 
 - **State entry:** Executable programs must contain a `START` state as their
   entry point and an `END` state as their termination state. State names must
@@ -349,12 +365,16 @@ reclaimed.
   failed requirement is a runtime error (exit 70) that names the state. It is
   for catching bad arguments or invalid program state, not for selecting an
   alternate execution path. It uses the truthiness rule above.
-- **Functions:** function declarations, calls, return statements, and native
-  functions are planned for Lab 5 and are not implemented in the current
-  language.
-- **Conditional and loop statements:** `if`, `else`, `while`, and `for` are
-  reserved by the scanner but are not parsed or executed by the Lab 4
-  implementation.
+- **Conditional and loop statements:** `if` executes one branch according to
+  the truthiness of its condition; an `else` binds to the nearest unmatched
+  `if`. `while` reevaluates its condition before each iteration. `for` runs
+  its initializer once, then checks the condition before each iteration and
+  evaluates the increment after the body. A `for` initializer is scoped to
+  that loop.
+- **Lab 5 scope:** this implementation follows the instructor-approved
+  state-focused alternative. It adds conditional and loop control flow and
+  logical operators, but does not implement user-defined functions, returns,
+  or native functions.
 
 ## Errors and diagnostics
 
@@ -394,9 +414,9 @@ The first is a scanner (lexical) error. The second and third are parser (syntax)
 | tests/lab2 | Parser | sidecar | `--parse` |
 | tests/lab3 | Evaluator | inline | `--eval` |
 | tests/lab4 | Context | inline | none |
-| tests/lab5 | Functions | inline | none |
+| tests/lab5 | State-based control flow and logical operators | inline | none |
 
-`tests/lab2/` covers every literal kind, the `term` level (including left-associativity, `1 - 2 - 3`), the `factor` level (including precedence over `term`, `2 + 3 * 4`), comparison, equality (including a comparison nested inside an equality), unary (including double negation, `!!true`), simple and nested grouping, one expression exercising the full six-level chain, and syntax-error cases (unclosed paren, dangling operator, missing `;`) asserting exit 65 with empty stdout. Every expression in every `tests/lab2/*.sf` file ends with `;`.
+`tests/lab2/` covers every literal kind, logical operators, the `term` level (including left-associativity, `1 - 2 - 3`), the `factor` level (including precedence over `term`, `2 + 3 * 4`), comparison, equality (including a comparison nested inside an equality), unary (including double negation, `!!true`), simple and nested grouping, one expression exercising the full precedence chain, and syntax-error cases (unclosed paren, dangling operator, missing `;`) asserting exit 65 with empty stdout. Every expression in every `tests/lab2/*.sf` file ends with `;`.
 
 `tests/lab3/` uses inline annotations: each expression ends with `;` followed by `// expect: <value>`, so the source and its expected output sit together. It covers literals, arithmetic and precedence, whole-number printing, string concatenation and coercion (including left-to-right `1 + 2 + "a"` versus `"a" + 1 + 2`), comparison, equality across types, truthiness through `!`, unary negation, output printed before a runtime error, one runtime-error case per message (exit 70), and a syntax error in a file that also holds a valid expression, to show that nothing runs (exit 65). Expected values were worked out by hand from the rules in Semantics, not copied from the interpreter's output.
 
@@ -410,6 +430,7 @@ python3 run_tests.py tests/lab1
 python3 run_tests.py tests/lab2
 python3 run_tests.py tests/lab3
 python3 run_tests.py tests/lab4
+python3 run_tests.py tests/lab5
 ```
 
 `tests/lab4/` checks file execution, declarations, nested lexical scopes and
@@ -418,20 +439,38 @@ validation, and static, syntax, and runtime errors. The REPL is line-oriented;
 top-level `var` bindings persist across input lines, while file-level
 `global` and `state` declarations are not accepted there.
 
+`tests/lab5/` checks conditional branches, `while` and `for` execution and
+scope, logical precedence, operand-return behavior, and short-circuiting.
+Function-related handout requirements are omitted under the instructor-
+approved state-focused alternative.
+
 ## Example program
 
-The runnable [example program](examples/hello_stateflow.sf) demonstrates a
-global binding, a state-local variable, passing a value through a state
-parameter, a `requires` condition, and output. Run it with:
+The [basic example](examples/hello_stateflow.sf) demonstrates a global
+binding, a state-local variable, passing a value through a state parameter, a
+`requires` condition, and output. The [workflow countdown](examples/workflow_countdown.sf)
+also demonstrates a state transition, a `while` loop, a conditional, and
+short-circuit logic. Run either with:
 
 ```
 ./run examples/hello_stateflow.sf
+./run examples/workflow_countdown.sf
 ```
 
 It prints:
 
 ```
 Hello, StateFlow!
+```
+
+The workflow countdown prints:
+
+```
+Workflow countdown
+3
+2
+1
+Complete
 ```
 
 ## Design rationale
@@ -456,18 +495,23 @@ The resulting scope model favors explicit access. State-local variables belong t
 
 The language is dynamically typed. We chose not to require type declarations for variables and state arguments because the intended programs benefit from a relatively lightweight syntax, and requiring programmers to specify types would add syntax without being necessary for the initial language design. Runtime values include numbers, strings, booleans, and `nil`, allowing the language to support both simple calculations and interactive programs.
 
-The expression grammar uses separate precedence levels for equality, comparison, arithmetic terms, factors, unary operators, and primary expressions. This structure was chosen so that familiar expressions such as `2 + 3 * 4` can be interpreted according to conventional precedence rules without requiring excessive parentheses. Binary operators are left-associative where appropriate, while unary operators are right-associative. Assignment is treated differently from ordinary arithmetic and comparison operations because its purpose is to update a variable binding rather than simply combine two independently evaluated values.
+The expression grammar uses separate precedence levels for assignment, logical operators, equality, comparison, arithmetic terms, factors, unary operators, and primary expressions. This structure was chosen so that familiar expressions such as `2 + 3 * 4` and `a or b and c` can be interpreted according to conventional precedence rules without requiring excessive parentheses. Binary operators are left-associative where appropriate, while unary operators and assignment are right-associative. Assignment is treated differently from ordinary arithmetic and comparison operations because its purpose is to update a variable binding rather than simply combine two independently evaluated values.
 
-Assignment is represented as its own expression form in the AST (`Expr.Assign`), parsed by an `assignment` rule that sits above `equality`. A variable expression represents reading the value associated with a name, while an assignment represents writing a value to that name. Keeping these concepts distinct prevents the left side of an assignment from being treated simply as another expression to evaluate. Assignment also produces the value that was assigned, allowing it to participate in larger expressions.
+Assignment is represented as its own expression form in the AST (`Expr.Assign`), parsed by an `assignment` rule with lower precedence than logical-or. A variable expression represents reading the value associated with a name, while an assignment represents writing a value to that name. Keeping these concepts distinct prevents the left side of an assignment from being treated simply as another expression to evaluate. Assignment also produces the value that was assigned, allowing it to participate in larger expressions.
 
 `+` is deliberately the only overloaded operator. Allowing `"n: " + 5` makes building output text convenient, while keeping `-`, `*`, `/` and the comparisons strict means a type mistake in arithmetic still fails loudly instead of silently producing a surprising value. Equality never converts either: `1 == "1"` is simply `false`. Truthiness follows Python's convention (`nil`, `false`, `0` and `""` are false) so conditions on counters and strings read naturally. Division by zero is a runtime error rather than `Infinity`, so a bad calculation stops the program. Operands are evaluated left to right so that the order of side effects matches the order of the source text.
 
-The Lab 4 parser supports `var`, `print`, blocks, expressions, `goto`, and
-`requires` so state bodies can perform ordinary computation. Conditional and
-loop statements, functions, `input`, and logical operators are reserved or
-planned features and are not implemented in this version.
+The parser supports `var`, `print`, blocks, expressions, `goto`, `requires`,
+conditionals, loops, and logical operators so state bodies can perform
+ordinary computation while keeping state transitions explicit. User-defined
+functions, `return`, and `input` remain outside the approved state-focused
+Lab 5 scope.
 
-The language is implemented incrementally. The normal runner now parses and executes the Lab 4 statement and state grammar. The `--parse` and `--eval` flags retain the expression-only grammar from earlier labs. The Grammar section documents both entry paths and distinguishes implemented features from planned ones.
+The language is implemented incrementally. The normal runner parses and
+executes the state and control-flow grammar. The `--parse` and `--eval` flags
+retain an expression-only grammar. The Grammar section documents both entry
+paths and distinguishes implemented features from reserved, unsupported
+keywords.
 
 We also chose to use `.sf` as the source-file extension and reserve `START` and `END` as state names. These conventions distinguish StateFlow source files from ordinary files and establish consistent entry and termination points for executable programs. Similarly, identifiers are case-sensitive and cannot use reserved keywords, preventing ambiguity between language constructs and user-defined names.
 
@@ -475,17 +519,15 @@ The language currently uses `//` for line comments and does not support block co
 
 The implementation is written in Kotlin, while StateFlow itself remains independent of the implementation language. Kotlin was chosen as the host language for the compiler/interpreter implementation, while the language design focuses on the syntax and semantics experienced by StateFlow programmers.
 
-Finally, the language has evolved incrementally alongside the laboratory activities. Lab 1 established the scanner and lexical structure, Lab 2 introduced the recursive-descent expression parser and AST, Lab 3 added expression evaluation, and Lab 4 added statements, scoped variables, and state execution. Functions and short-circuiting logical operators remain planned work for Lab 5.
+Finally, the language has evolved incrementally alongside the laboratory activities. Lab 1 established the scanner and lexical structure, Lab 2 introduced the recursive-descent expression parser and AST, Lab 3 added expression evaluation, Lab 4 added statements, scoped variables, and state execution, and Lab 5 added conditionals, loops, and short-circuit logical operators under the instructor-approved state-focused scope.
 
 
 ## Known limitations
 
-- `if`, `else`, `while`, and `for` are reserved and scanned but are not
-  accepted by the Lab 4 statement parser.
-- `and` / `or` are reserved and scanned but are not wired into the expression grammar.
-- Function declarations, function calls (including `input()`), returns, and native functions are not implemented yet.
+- User-defined functions, function calls, returns, and native functions are
+  not implemented under the approved state-focused Lab 5 scope. `fun`,
+  `return`, and `input` remain reserved keywords.
 - The REPL is line-oriented and does not accept file-level `global` or `state` declarations.
-- Lab 5 AST types and parser/interpreter hooks exist as scaffolding, but function declarations, function calls (including `input()`), returns, and logical operators are not usable in source programs yet.
 - Whole numbers of magnitude 10^15 or more, and very small fractions, print in Kotlin's scientific notation (`1.0E15`) instead of plain digits.
 - Leading-dot decimal literals (`.42`) are not recognized as one token.
 - Trailing-dot literals (`42.`) are not folded into the number.
@@ -502,4 +544,4 @@ Finally, the language has evolved incrementally alongside the laboratory activit
 | Lab 2 | Added the parser: a recursive-descent expression grammar (`assignment` -> `equality` -> `comparison` -> `term` -> `factor` -> `unary` -> `primary`) producing an `Expr` AST, plus `AstPrinter` for `--parse`'s prefix-parenthesized output. Every expression must be terminated by `;`. The REPL now prints parses instead of tokens. |
 | Lab 3 | Added the evaluator: `Interpreter` walks the `Expr` tree and computes values (numbers, strings, booleans, nil), `RuntimeError` reports failures with a line number (exit 70), and `Environment` holds variables. Added `--eval`, and the REPL now prints values. `+` concatenates when either side is a string. Truthiness, value printing, operator typing and division by zero are specified in Semantics. |
 | Lab 4 | Added statement parsing and execution, lexical block scopes, local and global variables, state parameters and transitions, `requires`, and static state-flow checks. Added annotated tests for scope, state flow, and errors. |
-| Lab 5 (scaffolding) | Added AST shapes and placeholder hooks for logical expressions, calls, function declarations, returns, the callable protocol, and return propagation. These placeholders are not wired into parsing or implemented yet. |
+| Lab 5 (state-focused scope) | Added `if`/`else`, `while`, `for` (desugared to a scoped `while`), and short-circuit `and`/`or` with operand-return semantics. Removed unfinished function and return scaffolding; function-related handout requirements are omitted under the instructor-approved state-focused alternative. Added Lab 5 tests and a control-flow example. |
