@@ -1,0 +1,13 @@
+state START {
+    var count = 0;
+    var total = 0;
+    while (count < 3) {
+        total = total + count;
+        count = count + 1;
+    }
+    print total; // expect: 3
+    goto END;
+}
+
+state END {
+}

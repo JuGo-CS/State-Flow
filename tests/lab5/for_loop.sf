@@ -1,0 +1,11 @@
+state START {
+    var total = 0;
+    for (var index = 0; index < 3; index = index + 1) {
+        total = total + index;
+    }
+    print total; // expect: 3
+    goto END;
+}
+
+state END {
+}
