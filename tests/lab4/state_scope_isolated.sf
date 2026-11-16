@@ -1,0 +1,12 @@
+state START {
+    var secret = "local to START";
+    goto NEXT;
+}
+
+state NEXT {
+    print secret; // expect runtime error: Undefined variable 'secret'.
+    goto END;
+}
+
+state END {
+}

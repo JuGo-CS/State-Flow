@@ -16,5 +16,5 @@ sealed class Statement {
     data class Goto(val keyword: Token, val target: Token, val arguments: List<Expr>) : Statement()
 
     // requires(<condition>);
-    data class Requires(val condition: Expr) : Statement()
+    data class Requires(val keyword: Token, val condition: Expr) : Statement()
 }

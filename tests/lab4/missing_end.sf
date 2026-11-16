@@ -1,0 +1,3 @@
+state START {
+    goto START;
+} // expect error: Program must define a state named END.

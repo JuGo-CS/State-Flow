@@ -1,0 +1,7 @@
+state START {
+    missing = 1; // expect runtime error: Undefined variable 'missing'.
+    goto END;
+}
+
+state END {
+}

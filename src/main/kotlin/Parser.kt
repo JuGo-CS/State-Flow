@@ -1,12 +1,13 @@
-class Parser(private val tokens: List<Token>) {
+open class Parser(private val tokens: List<Token>) {
     private var current = 0
 
     var hadError = false
-        private set
+        protected set
 
-    private class ParseError : RuntimeException()
+    protected class ParseError : RuntimeException()
 
-    fun parse(): Expr.Program {
+    // lab 2 entry point
+    fun parse(): Program {
         val expressions = mutableListOf<Expr>()
         while (!isAtEnd()) {
             try {
@@ -16,10 +17,10 @@ class Parser(private val tokens: List<Token>) {
                 synchronize()   // consume a token
             }
         }
-        return Expr.Program(expressions)
+        return Program(expressions)
     }
 
-    private fun expression(): Expr = assignment()
+    protected fun expression(): Expr = assignment()
 
     private fun assignment(): Expr {
         val expr = equality()
@@ -111,25 +112,25 @@ class Parser(private val tokens: List<Token>) {
         throw error(peek(), "Expect expression.")
     }
 
-    // helpers
+    // helpers (protected so StatementParser can use them)
 
-    private fun peek(): Token = tokens[current]
+    protected fun peek(): Token = tokens[current]
 
-    private fun previous(): Token = tokens[current - 1]
+    protected fun previous(): Token = tokens[current - 1]
 
-    private fun isAtEnd(): Boolean = peek().type == TokenType.EOF
+    protected fun isAtEnd(): Boolean = peek().type == TokenType.EOF
 
-    private fun advance(): Token {
+    protected fun advance(): Token {
         if (!isAtEnd()) current++
         return previous()
     }
 
-    private fun check(type: TokenType): Boolean {
+    protected fun check(type: TokenType): Boolean {
         if (isAtEnd()) return false
         return peek().type == type
     }
 
-    private fun match(vararg types: TokenType): Boolean {
+    protected fun match(vararg types: TokenType): Boolean {
         for (type in types) {
             if (check(type)) {
                 advance()
@@ -139,12 +140,12 @@ class Parser(private val tokens: List<Token>) {
         return false
     }
 
-    private fun consume(type: TokenType, message: String): Token {
+    protected fun consume(type: TokenType, message: String): Token {
         if (check(type)) return advance()
         throw error(peek(), message)
     }
 
-    private fun error(token: Token, message: String): ParseError {
+    protected fun error(token: Token, message: String): ParseError {
         hadError = true
         if (token.type == TokenType.EOF) {
             System.err.println("[line ${token.line}] Error at end: $message")
@@ -154,13 +155,14 @@ class Parser(private val tokens: List<Token>) {
         return ParseError()
     }
 
-    private fun synchronize() {
+    protected fun synchronize() {
         advance()
         while (!isAtEnd()) {
             if (previous().type == TokenType.SEMICOLON) return
             when (peek().type) {
-                TokenType.FUN, TokenType.VAR, TokenType.FOR, TokenType.IF,
-                TokenType.WHILE, TokenType.PRINT, TokenType.RETURN -> return
+                TokenType.STATE, TokenType.GLOBAL, TokenType.FUN, TokenType.VAR,
+                TokenType.FOR, TokenType.IF, TokenType.WHILE, TokenType.PRINT,
+                TokenType.RETURN, TokenType.GOTO, TokenType.REQUIRES -> return
                 else -> {}
             }
             advance()

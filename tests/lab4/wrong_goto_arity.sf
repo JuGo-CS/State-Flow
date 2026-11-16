@@ -1,0 +1,10 @@
+state START {
+    goto TARGET(1); // expect error: State 'TARGET' expects 2 argument(s) but got 1.
+}
+
+state TARGET(first, second) {
+    goto END;
+}
+
+state END {
+}

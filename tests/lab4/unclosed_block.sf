@@ -1,0 +1,3 @@
+state START {
+    print "must not run";
+    goto START; // expect error: Expect '}' after block.

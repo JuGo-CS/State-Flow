@@ -1,0 +1,7 @@
+// expect nothing
+state START {
+  goto END;
+}
+
+state END {
+}

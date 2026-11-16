@@ -1,0 +1,7 @@
+state START {
+    goto END;
+}
+
+state END {
+    goto START; // expect error: END cannot use 'goto'.
+}

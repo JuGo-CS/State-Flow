@@ -1,0 +1,5 @@
+state START {
+} // expect error: State 'START' must have a 'goto'.
+
+state END {
+}

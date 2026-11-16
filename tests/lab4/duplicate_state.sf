@@ -1,0 +1,9 @@
+state START {
+    goto END;
+}
+
+state END {
+}
+
+state END {
+} // expect error: State 'END' is already defined.

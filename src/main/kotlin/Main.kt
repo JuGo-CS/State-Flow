@@ -5,7 +5,7 @@ fun main(args: Array<String>) {
         args.size == 2 && args[0] == "--tokenize" -> runTokenFile(args[1])
         args.size == 2 && args[0] == "--eval" -> runEvalFile(args[1])
         args.size == 2 && args[0] == "--parse" -> runParseFile(args[1])
-        args.size == 1 -> println("Hello, maayong buntag!")
+        args.size == 1 -> runFile(args[0])
         args.isEmpty() -> runPrompt()
         else -> {
             exitProcess(64)
@@ -58,7 +58,10 @@ fun runParseFile(path: String) {
         exitProcess(65)
     }
 
-    println(AstPrinter().print(program))
+    // an empty or comment-only file prints nothing
+    if (program.expressions.isNotEmpty()) {
+        println(AstPrinter().print(program))
+    }
     exitProcess(0)
 }
 
@@ -83,10 +86,33 @@ fun runEvalFile(path: String) {
     exitProcess(0)
 }
 
+// plain run (statements)
+fun runFile(path: String) {
+    val source = readSourceFile(path)
+    val tokens = scan(source) ?: exitProcess(65)
+
+    val parser = StatementParser(tokens)
+    val statements = parser.parseStatements()
+    if (parser.hadError) {
+        exitProcess(65)   // syntax error
+    }
+
+    val checker = Checker(statements)
+    checker.check()
+    if (checker.hadError) {
+        exitProcess(65)   // static error: START/END, goto targets
+    }
+
+    val interpreter = Interpreter()
+    if (!interpreter.runProgram(statements)) {
+        exitProcess(70)   // runtime error: started, then failed
+    }
+    exitProcess(0)
+}
 
 // REPL
 fun runPrompt() {
-    val interpreter = Interpreter()
+    val interpreter = Interpreter()   // one for the whole session, so variables persist
     print("> ")
     var line = readlnOrNull()
 
@@ -99,39 +125,16 @@ fun runPrompt() {
     println()
 }
 
-fun runScanner(source: String) {
-    val tokens = scan(source) ?: return
-
-    for (token in tokens) {
-        println(token)
-    }
-}
-
-fun parseAndPrintLine(source: String) {
-    val tokens = scan(source) ?: return
-
-    val parser = Parser(tokens)
-    val program = parser.parse()
-    if (parser.hadError) {
-        return
-    }
-
-    println(AstPrinter().print(program))
-}
-
 // evaluator (REPL, one line)
 fun evalAndPrintLine(source: String, interpreter: Interpreter) {
     val tokens = scan(source) ?: return
 
-    val parser = Parser(tokens)
-    val program = parser.parse()
+    val parser = StatementParser(tokens)
+    val statements = parser.parseRepl()
     if (parser.hadError) {
         return
     }
 
-    for (e in program.expressions) {
-        if (!interpreter.interpret(e)) {
-            return   // error already printed; just show the prompt again
-        }
-    }
+    // error already printed inside; just show the prompt again
+    interpreter.runRepl(statements)
 }

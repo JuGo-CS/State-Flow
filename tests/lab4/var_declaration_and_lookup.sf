@@ -1,0 +1,11 @@
+state START {
+  var x = 10;
+  var y = 20;
+  print x + y;        // expect: 30
+  var z = x * y;
+  print z;            // expect: 200
+  goto END;
+}
+
+state END {
+}

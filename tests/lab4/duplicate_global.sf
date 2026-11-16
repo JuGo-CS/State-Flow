@@ -1,0 +1,9 @@
+global value = 1;
+global value = 2; // expect runtime error: Variable 'value' is already declared in this scope.
+
+state START {
+    goto END;
+}
+
+state END {
+}
