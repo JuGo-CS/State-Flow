@@ -119,14 +119,23 @@ class Interpreter {
     }
 
     // look up value of variable by the name
-    private fun evalVariable(expr: Expr.Variable): Any? = environment.get(expr.name)
+    private fun evalVariable(expr: Expr.Variable): Any? =
+        if (environment.isDefinedInChain(expr.name.lexeme)) {
+            environment.get(expr.name)
+        } else {
+            globals.get(expr.name)
+        }
 
 
     private fun evalAssign(expr: Expr.Assign): Any? {
 
         // compute right side and store
         val value = evaluate(expr.value)
-        environment.assign(expr.name, value)
+        if (environment.isDefinedInChain(expr.name.lexeme)) {
+            environment.assign(expr.name, value)
+        } else {
+            globals.assign(expr.name, value)
+        }
 
         return value
     }
@@ -145,9 +154,9 @@ class Interpreter {
             }
 
             // enter START
-            val start = states["START"]
+            val start = states[ReservedState.START.name]
             if (start == null) {
-                System.err.println("Runtime error: no START state.")
+                System.err.println("Runtime error: no ${ReservedState.START} state.")
                 return false
             }
             runStates(start)
@@ -171,7 +180,7 @@ class Interpreter {
             currentState = state.name
 
             // new scope for every entry into a state, parameters filled in
-            val stateEnv = Environment(globals)
+            val stateEnv = Environment()
             for ((i, param) in state.params.withIndex()) {
                 stateEnv.define(param.lexeme, args[i])
             }
@@ -186,7 +195,7 @@ class Interpreter {
             }
 
             // only END may finish without a goto
-            if (state.name.lexeme == "END") return
+            if (state.name.lexeme == ReservedState.END.name) return
             throw RuntimeError(state.name, "State '${state.name.lexeme}' finished without a goto.")
         }
     }
