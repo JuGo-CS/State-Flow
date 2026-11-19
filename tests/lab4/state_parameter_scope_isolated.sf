@@ -1,0 +1,15 @@
+state START {
+    goto HOLD("private");
+}
+
+state HOLD(value) {
+    goto NEXT;
+}
+
+state NEXT {
+    print value; // expect runtime error: Undefined variable 'value'.
+    goto END;
+}
+
+state END {
+}
