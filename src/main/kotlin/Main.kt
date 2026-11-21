@@ -5,12 +5,17 @@ fun main(args: Array<String>) {
         args.size == 2 && args[0] == "--tokenize" -> runTokenFile(args[1])
         args.size == 2 && args[0] == "--eval" -> runEvalFile(args[1])
         args.size == 2 && args[0] == "--parse" -> runParseFile(args[1])
+        args.size == 1 && args[0].startsWith("--") -> usageError()
         args.size == 1 -> runFile(args[0])
         args.isEmpty() -> runPrompt()
-        else -> {
-            exitProcess(64)
-        }
+        else -> usageError()
     }
+}
+
+
+private fun usageError(): Nothing {
+    System.err.println("Usage: ./run [--tokenize | --parse | --eval] <file>  |  ./run <file>  |  ./run")
+    exitProcess(64)
 }
 
 private fun readSourceFile(path: String): String {
