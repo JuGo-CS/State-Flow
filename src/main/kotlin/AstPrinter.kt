@@ -11,6 +11,7 @@ class AstPrinter {
         is Expr.Variable -> expr.name.lexeme
         is Expr.Assign -> parenthesize("= " + expr.name.lexeme, expr.value)
         is Expr.Logical -> parenthesize(expr.operator.lexeme, expr.left, expr.right)
+        is Expr.Input -> if (expr.prompt == null) "(input)" else parenthesize("input", expr.prompt)
     }
 
     private fun parenthesize(name: String, vararg exprs: Expr): String {

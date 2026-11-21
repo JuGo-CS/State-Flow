@@ -123,6 +123,17 @@ open class Parser(private val tokens: List<Token>) {
             return Expr.Variable(previous())
         }
 
+        if (match(TokenType.INPUT)) {
+            val keyword = previous()
+            consume(TokenType.LEFT_PAREN, "Expect '(' after 'input'.")
+            var prompt: Expr? = null
+            if (!check(TokenType.RIGHT_PAREN)) {
+                prompt = expression()
+            }
+            consume(TokenType.RIGHT_PAREN, "Expect ')' after input prompt.")
+            return Expr.Input(keyword, prompt)
+        }
+
         if (match(TokenType.LEFT_PAREN)) {
             val expr = expression()
             consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
@@ -183,6 +194,7 @@ open class Parser(private val tokens: List<Token>) {
                 TokenType.STATE, TokenType.GLOBAL, TokenType.FUN, TokenType.VAR,
                 TokenType.FOR, TokenType.IF, TokenType.WHILE, TokenType.PRINT,
                 TokenType.RETURN, TokenType.GOTO, TokenType.REQUIRES -> return
+
                 else -> {}
             }
             advance()

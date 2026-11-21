@@ -16,5 +16,5 @@ jobs:
       - run: python3 run_tests.py tests/lab2
       - run: python3 run_tests.py tests/lab3
       - run: python3 run_tests.py tests/lab4
-      - run: python3 run_tests.py tests/lab5
+      - run: python3 run_tests.py tests/lab5 </dev/null  # close stdin for input test
       

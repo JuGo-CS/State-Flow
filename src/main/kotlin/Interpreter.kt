@@ -16,7 +16,7 @@ class Interpreter {
 
     // thrown by goto to leave the current state and enter another
     private class GotoSignal(val target: Statement.State, val arguments: List<Any?>) : RuntimeException()
-    
+
     // entry point
     fun interpret(expr: Expr): Boolean {
         return try {
@@ -40,6 +40,7 @@ class Interpreter {
         is Expr.Variable -> evalVariable(expr)
         is Expr.Assign -> evalAssign(expr)
         is Expr.Logical -> evalLogical(expr)
+        is Expr.Input -> evalInput(expr)
     }
 
     // return immediately if literal
@@ -54,11 +55,12 @@ class Interpreter {
         val operand = evaluate(expr.right)
 
         return when (expr.operator.type) {
-    
+
             TokenType.MINUS -> {
                 checkNumberOperand(expr.operator, operand)
                 -(operand as Double)
             }
+
             TokenType.BANG -> !isTruthy(operand)
 
             // safety throw
@@ -84,10 +86,12 @@ class Interpreter {
                 checkNumberOperands(op, left, right)
                 (left as Double) - (right as Double)
             }
+
             TokenType.STAR -> {
                 checkNumberOperands(op, left, right)
                 (left as Double) * (right as Double)
             }
+
             TokenType.SLASH -> {
                 checkNumberOperands(op, left, right)
                 if ((right as Double) == 0.0) throw RuntimeError(op, "Division by zero.")
@@ -99,14 +103,17 @@ class Interpreter {
                 checkNumberOperands(op, left, right)
                 (left as Double) > (right as Double)
             }
+
             TokenType.GREATER_EQUAL -> {
                 checkNumberOperands(op, left, right)
                 (left as Double) >= (right as Double)
             }
+
             TokenType.LESS -> {
                 checkNumberOperands(op, left, right)
                 (left as Double) < (right as Double)
             }
+
             TokenType.LESS_EQUAL -> {
                 checkNumberOperands(op, left, right)
                 (left as Double) <= (right as Double)
@@ -149,6 +156,17 @@ class Interpreter {
             TokenType.OR -> if (isTruthy(left)) left else evaluate(expr.right)
             else -> throw RuntimeError(expr.operator, "Unknown logical operator.")
         }
+    }
+
+    private fun evalInput(expr: Expr.Input): Any? {
+        // show the prompt first, if there is one
+        if (expr.prompt != null) {
+            print(stringify(evaluate(expr.prompt)))
+            System.out.flush()
+        }
+
+        // one line of text, or nil when there is no more input
+        return readlnOrNull()
     }
 
     // run a whole program, false means a runtime error
@@ -333,7 +351,7 @@ class Interpreter {
         if (a == null && b == null) return true
         if (a == null || b == null) return false
         if (a is Double && b is Double) return a == b
-        
+
         return a == b
     }
 
