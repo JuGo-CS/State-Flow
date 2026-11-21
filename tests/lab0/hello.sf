@@ -1,5 +1,5 @@
 state START {
-  print "Hello, maayong buntag!";
+  print("Hello, maayong buntag!");
   goto END;
 }
 

@@ -1,6 +1,6 @@
 state START {
     var value;
-    print value; // expect: nil
+    print(value); // expect: nil
     goto END;
 }
 

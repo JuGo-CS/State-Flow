@@ -1,5 +1,5 @@
 state START {
-    print "must not run";
+    print("must not run");
     goto MISSING; // expect error: Undefined state 'MISSING'.
 }
 

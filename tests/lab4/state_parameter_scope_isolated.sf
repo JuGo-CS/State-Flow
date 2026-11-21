@@ -7,7 +7,7 @@ state HOLD(value) {
 }
 
 state NEXT {
-    print value; // expect runtime error: Undefined variable 'value'.
+    print(value); // expect runtime error: Undefined variable 'value'.
     goto END;
 }
 

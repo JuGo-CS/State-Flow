@@ -1,7 +1,7 @@
 state START {
-    print false or true and false; // expect: false
-    print true or false and false; // expect: true
-    print (false or true) and false; // expect: false
+    print(false or true and false); // expect: false
+    print(true or false and false); // expect: true
+    print((false or true) and false); // expect: false
     goto END;
 }
 

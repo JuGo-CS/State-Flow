@@ -1,9 +1,9 @@
 state START {
-    print false and (1 / 0); // expect: false
-    print true or (1 / 0); // expect: true
-    print "kept" and 7; // expect: 7
-    print 0 or "fallback"; // expect: fallback
-    print 5 or (1 / 0); // expect: 5
+    print(false and (1 / 0)); // expect: false
+    print(true or (1 / 0)); // expect: true
+    print("kept" and 7); // expect: 7
+    print(0 or "fallback"); // expect: fallback
+    print(5 or (1 / 0)); // expect: 5
     goto END;
 }
 

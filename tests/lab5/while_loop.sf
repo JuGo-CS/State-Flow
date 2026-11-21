@@ -5,7 +5,7 @@ state START {
         total = total + count;
         count = count + 1;
     }
-    print total; // expect: 3
+    print(total); // expect: 3
     goto END;
 }
 

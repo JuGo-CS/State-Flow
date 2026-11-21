@@ -1,5 +1,5 @@
 state START {
-    print (1 + 2; // expect error: Expect ')' after expression.
+    print((1 + 2; // expect error: Expect ')' after expression.
     goto END;
 }
 

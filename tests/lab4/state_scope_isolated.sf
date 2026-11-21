@@ -4,7 +4,7 @@ state START {
 }
 
 state NEXT {
-    print secret; // expect runtime error: Undefined variable 'secret'.
+    print(secret); // expect runtime error: Undefined variable 'secret'.
     goto END;
 }
 

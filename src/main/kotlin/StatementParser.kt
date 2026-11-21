@@ -129,7 +129,9 @@ class StatementParser(tokens: List<Token>) : Parser(tokens) {
     }
 
     private fun printStatement(): Statement {
+        consume(TokenType.LEFT_PAREN, "Expect '(' after 'print'.")
         val value = expression()
+        consume(TokenType.RIGHT_PAREN, "Expect ')' after print value.")
         consume(TokenType.SEMICOLON, "Expect ';' after value.")
         return Statement.Print(value)
     }

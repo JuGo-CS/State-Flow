@@ -1,12 +1,12 @@
 state START {
     if (true) {
-        print "outer then"; // expect: outer then
-        if (false) print "inner then"; else print "nearest else"; // expect: nearest else
+        print("outer then"); // expect: outer then
+        if (false) print("inner then"); else print("nearest else"); // expect: nearest else
     } else {
-        print "outer else";
+        print("outer else");
     }
 
-    if (0) print "truthy"; else print "falsey"; // expect: falsey
+    if (0) print("truthy"); else print("falsey"); // expect: falsey
     goto END;
 }
 

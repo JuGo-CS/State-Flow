@@ -3,7 +3,7 @@ state START {
     for (var index = 0; index < 3; index = index + 1) {
         total = total + index;
     }
-    print total; // expect: 3
+    print(total); // expect: 3
     goto END;
 }
 

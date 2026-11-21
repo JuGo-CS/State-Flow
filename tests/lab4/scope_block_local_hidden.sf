@@ -1,9 +1,9 @@
 state START {
     {
         var hidden = "block local";
-        print hidden; // expect: block local
+        print(hidden); // expect: block local
     }
-    print hidden; // expect runtime error: Undefined variable 'hidden'.
+    print(hidden); // expect runtime error: Undefined variable 'hidden'.
     goto END;
 }
 

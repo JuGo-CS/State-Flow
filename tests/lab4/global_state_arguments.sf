@@ -8,13 +8,13 @@ state START {
 
 state GREETING(name) {
     requires name != nil;
-    print name;             // expect: hello
+    print(name);             // expect: hello
     visits = visits + 1;
     goto REPORT(visits);
 }
 
 state REPORT(total) {
-    print total;            // expect: 2
+    print(total);            // expect: 2
     goto END;
 }
 

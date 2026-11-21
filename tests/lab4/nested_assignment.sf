@@ -4,11 +4,11 @@ state START {
         var b = 2;
         {
             a = a + b;
-            print a;           // expect: 3
+            print(a);           // expect: 3
         }
-        print b;             // expect: 2
+        print(b);             // expect: 2
     }
-    print a;               // expect: 3
+    print(a);               // expect: 3
     goto END;
 }
 

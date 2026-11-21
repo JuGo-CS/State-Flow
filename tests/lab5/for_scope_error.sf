@@ -1,7 +1,7 @@
 state START {
     for (var index = 0; index < 1; index = index + 1) {
     }
-    print index; // expect runtime error: Undefined variable 'index'.
+    print(index); // expect runtime error: Undefined variable 'index'.
     goto END;
 }
 

@@ -1,5 +1,5 @@
 state START {
-  print missing;      // expect runtime error: Undefined variable 'missing'.
+  print(missing);      // expect runtime error: Undefined variable 'missing'.
   goto END;
 }
 

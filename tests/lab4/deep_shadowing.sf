@@ -4,11 +4,11 @@ state START {
         var value = "block";
         {
             var value = "inner";
-            print value;       // expect: inner
+            print(value);       // expect: inner
         }
-        print value;         // expect: block
+        print(value);         // expect: block
     }
-    print value;           // expect: state
+    print(value);           // expect: state
     goto END;
 }
 
