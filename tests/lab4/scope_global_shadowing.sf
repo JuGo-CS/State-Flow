@@ -1,0 +1,22 @@
+global score = 10;
+
+state START {
+    var score = 1;
+    {
+        score = score + 1;
+        print score; // expect: 2
+    }
+    score = score + 1;
+    print score; // expect: 3
+    goto NEXT;
+}
+
+state NEXT {
+    print score; // expect: 10
+    score = score + 5;
+    goto END;
+}
+
+state END {
+    print score; // expect: 15
+}

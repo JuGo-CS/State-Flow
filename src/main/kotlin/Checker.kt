@@ -16,13 +16,15 @@ class Checker(private val statements: List<Statement>) {
         }
 
         // START and END must exist
-        val start = states["START"]
-        if (start == null) reportGeneral("Program must define a state named START.")
-        if (!states.containsKey("END")) reportGeneral("Program must define a state named END.")
+        val start = states[ReservedState.START.name]
+        if (start == null) reportGeneral("Program must define a state named ${ReservedState.START}.")
+        if (!states.containsKey(ReservedState.END.name)) {
+            reportGeneral("Program must define a state named ${ReservedState.END}.")
+        }
 
         // nothing can pass parameters into START
         if (start != null && start.params.isNotEmpty()) {
-            report(start.name, "START cannot have parameters.")
+            report(start.name, "${ReservedState.START} cannot have parameters.")
         }
 
         // check each state's gotos, in file order
@@ -32,13 +34,15 @@ class Checker(private val statements: List<Statement>) {
     }
 
     private fun checkState(state: Statement.State) {
-        val isEnd = state.name.lexeme == "END"
+        val isEnd = state.name.lexeme == ReservedState.END.name
         val gotos = mutableListOf<Statement.Goto>()
         checkRequiresPlacement(state.body, isTopLevel = true)
         collectGotos(state.body, gotos)
 
         // END must not leave; every other state must have a goto
-        if (isEnd && gotos.isNotEmpty()) report(gotos[0].keyword, "END cannot use 'goto'.")
+        if (isEnd && gotos.isNotEmpty()) {
+            report(gotos[0].keyword, "${ReservedState.END} cannot use 'goto'.")
+        }
         if (!isEnd && gotos.isEmpty()) report(state.name, "State '${state.name.lexeme}' must have a 'goto'.")
 
         // each goto must name an existing state and pass the right number of arguments

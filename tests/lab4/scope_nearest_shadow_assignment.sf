@@ -1,0 +1,13 @@
+state START {
+    var value = 1;
+    {
+        var value = 2;
+        value = value + 1;
+        print value; // expect: 3
+    }
+    print value; // expect: 1
+    goto END;
+}
+
+state END {
+}
